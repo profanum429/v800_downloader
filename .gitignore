@@ -1,0 +1,9 @@
+*.o
+*.exe
+Makefile
+Makefile.Debug
+Makefile.Release
+v800_downloader.pro.user
+debug/tmp/ui_v800main.h
+debug/tmp/moc_v800usb.cpp
+debug/tmp/moc_v800main.cpp
