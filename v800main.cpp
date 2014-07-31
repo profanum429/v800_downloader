@@ -24,7 +24,7 @@ V800Main::V800Main(QWidget *parent) :
     connect(usb, SIGNAL(not_ready()), this, SLOT(handle_not_ready()));
     connect(this, SIGNAL(get_session(QByteArray)), usb, SLOT(get_session(QByteArray)));
 
-    connect(usb_thread, SIGNAL(started()), usb, SLOT(loop()));
+    connect(usb_thread, SIGNAL(started()), usb, SLOT(start()));
     usb_thread->start();
 
     ui->setupUi(this);

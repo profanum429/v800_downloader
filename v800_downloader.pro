@@ -14,10 +14,12 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         v800main.cpp \
-    v800usb.cpp
+    v800usb.cpp \
+    native_usb.cpp
 
 HEADERS  += v800main.h \
-    v800usb.h
+    v800usb.h \
+    native_usb.h
 
 FORMS    += v800main.ui
 
@@ -28,5 +30,6 @@ OBJECTS_DIR = $$DESTDIR/tmp
 RCC_DIR = $$DESTDIR/tmp
 UI_DIR = $$DESTDIR/tmp
 
-INCLUDEPATH += C:/Qt/libusb-1.0
-LIBS += C:/Qt/libusb-1.0/libusb-1.0.a
+osx:LIBS += -framework CoreFoundation -framework IOKit
+win32:INCLUDEPATH += C:/Qt/libusb-1.0
+win32:LIBS += C:/Qt/libusb-1.0/libusb-1.0.a

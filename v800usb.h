@@ -2,7 +2,8 @@
 #define V800USB_H
 
 #include <QObject>
-#include <libusb.h>
+
+class native_usb;
 
 class V800usb : public QObject
 {
@@ -18,28 +19,31 @@ signals:
     void not_ready();
 
 public slots:
-    void loop();
+    void start();
     void get_session(QByteArray session);
 
 private:
-    int extract_dir_and_files(unsigned char *full, int full_size, unsigned char dir_and_files[][64]);
-    void generate_request(char *request, unsigned char *packet);
-    void generate_ack(unsigned char packet_num, unsigned char *packet);
-    int is_end(unsigned char *packet);
-    int add_to_full(unsigned char *packet, unsigned char *full, int full_size, int initial_packet);
-    int get_all_dates(libusb_device_handle *v800, unsigned char dates[][64]);
-    int get_all_times(libusb_device_handle *v800, unsigned char *date, unsigned char times[][64]);
-    int get_all_files(libusb_device_handle *v800, char *dir, unsigned char files[][64]);
-    void get_file(libusb_device_handle *v800, char *dir, unsigned char *file);
+    QList<QByteArray> extract_dir_and_files(QByteArray full);
+    QByteArray generate_request(QString request);
+    QByteArray generate_ack(unsigned char packet_num);
+    int is_end(QByteArray packet);
+    QByteArray add_to_full(QByteArray packet, QByteArray full, int full_size);
 
     QList<QByteArray> get_all_dates();
     QList<QByteArray> get_all_times(QByteArray date);
     QList<QByteArray> get_all_files(QByteArray date, QByteArray time);
-    void get_file(QByteArray date, QByteArray time, QByteArray file);
+    void get_file(QByteArray date, QByteArray time, QByteArray file, int type);
     void get_session_info(QByteArray date, QByteArray time);
+
     void get_all_sessions();
 
-    libusb_device_handle *v800;
+    native_usb *usb;
+
+    enum {
+        SESSION_DATA = 0,
+        SESSION_INFO = 1,
+        END_TYPES
+    };
 };
 
 #endif // V800USB_H
