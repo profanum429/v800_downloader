@@ -4,6 +4,8 @@
 
 #include <QThread>
 #include <QMessageBox>
+#include <QFileDialog>
+#include <QStandardPaths>
 
 V800Main::V800Main(QWidget *parent) :
     QWidget(parent),
@@ -22,7 +24,7 @@ V800Main::V800Main(QWidget *parent) :
     connect(usb, SIGNAL(session_done()), this, SLOT(handle_session_done()));
     connect(usb, SIGNAL(ready()), this, SLOT(handle_ready()));
     connect(usb, SIGNAL(not_ready()), this, SLOT(handle_not_ready()));
-    connect(this, SIGNAL(get_session(QByteArray)), usb, SLOT(get_session(QByteArray)));
+    connect(this, SIGNAL(get_session(QByteArray, QString)), usb, SLOT(get_session(QByteArray, QString)));
 
     connect(usb_thread, SIGNAL(started()), usb, SLOT(start()));
     usb_thread->start();
@@ -88,13 +90,22 @@ void V800Main::on_downloadBtn_clicked()
     ui->exerciseTree->setEnabled(false);
     ui->downloadBtn->setEnabled(false);
 
+    QString save_dir = QFileDialog::getExistingDirectory(this, tr("Open Directory"), QDir::homePath(), QFileDialog::ShowDirsOnly);
+    if(save_dir == "")
+    {
+        ui->exerciseTree->setEnabled(true);
+        ui->downloadBtn->setEnabled(true);
+
+        return;
+    }
+
     for(item_iter = 0; item_iter < ui->exerciseTree->topLevelItemCount(); item_iter++)
     {
         // get all the files if this exercise is checked
         if(ui->exerciseTree->topLevelItem(item_iter)->checkState(0) == Qt::Checked)
         {
             session_cnt++;
-            emit get_session(ui->exerciseTree->topLevelItem(item_iter)->text(0).toLatin1());
+            emit get_session(ui->exerciseTree->topLevelItem(item_iter)->text(0).toLatin1(), save_dir);
         }
     }
 }

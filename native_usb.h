@@ -24,6 +24,9 @@ private:
 #if defined(Q_OS_LINUX) || defined(Q_OS_WIN)
     libusb_device_handle *usb;
 #endif
+#if defined(Q_OS_MAC)
+    int usb;
+#endif
 };
 
 #endif // NATIVE_USB_H

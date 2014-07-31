@@ -18,7 +18,7 @@ public:
     ~V800Main();
 
 signals:
-    void get_session(QByteArray session);
+    void get_session(QByteArray session, QString save_dir);
 
 private slots:
     void handle_ready();

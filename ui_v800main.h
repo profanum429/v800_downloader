@@ -13,6 +13,8 @@
 #include <QtWidgets/QAction>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QButtonGroup>
+#include <QtWidgets/QGridLayout>
+#include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QHeaderView>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QTreeWidget>
@@ -23,20 +25,39 @@ QT_BEGIN_NAMESPACE
 class Ui_V800Main
 {
 public:
-    QPushButton *downloadBtn;
+    QGridLayout *gridLayout;
+    QHBoxLayout *horizontalLayout;
     QTreeWidget *exerciseTree;
+    QPushButton *downloadBtn;
 
     void setupUi(QWidget *V800Main)
     {
         if (V800Main->objectName().isEmpty())
             V800Main->setObjectName(QStringLiteral("V800Main"));
-        V800Main->resize(400, 300);
+        V800Main->resize(452, 386);
+        gridLayout = new QGridLayout(V800Main);
+        gridLayout->setSpacing(6);
+        gridLayout->setContentsMargins(11, 11, 11, 11);
+        gridLayout->setObjectName(QStringLiteral("gridLayout"));
+        horizontalLayout = new QHBoxLayout();
+        horizontalLayout->setSpacing(6);
+        horizontalLayout->setObjectName(QStringLiteral("horizontalLayout"));
+        exerciseTree = new QTreeWidget(V800Main);
+        QTreeWidgetItem *__qtreewidgetitem = new QTreeWidgetItem();
+        __qtreewidgetitem->setText(0, QStringLiteral("1"));
+        exerciseTree->setHeaderItem(__qtreewidgetitem);
+        exerciseTree->setObjectName(QStringLiteral("exerciseTree"));
+
+        horizontalLayout->addWidget(exerciseTree);
+
         downloadBtn = new QPushButton(V800Main);
         downloadBtn->setObjectName(QStringLiteral("downloadBtn"));
-        downloadBtn->setGeometry(QRect(294, 220, 81, 41));
-        exerciseTree = new QTreeWidget(V800Main);
-        exerciseTree->setObjectName(QStringLiteral("exerciseTree"));
-        exerciseTree->setGeometry(QRect(10, 10, 271, 281));
+
+        horizontalLayout->addWidget(downloadBtn);
+
+
+        gridLayout->addLayout(horizontalLayout, 0, 0, 1, 1);
+
 
         retranslateUi(V800Main);
 

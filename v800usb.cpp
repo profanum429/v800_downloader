@@ -78,7 +78,7 @@ void V800usb::get_all_sessions()
     emit all_sessions(sessions);
 }
 
-void V800usb::get_session(QByteArray session)
+void V800usb::get_session(QByteArray session, QString save_dir)
 {
     QDateTime session_time = QDateTime::fromString(session.constData(), Qt::TextDate);
     QString session_str = session_time.toString("yyyyMMdd/HHmmss");
@@ -90,17 +90,17 @@ void V800usb::get_session(QByteArray session)
     {
         files = get_all_files(session_split[0].toLatin1(), session_split[1].toLatin1());
         for(files_iter = 0; files_iter < files.length(); files_iter++)
-            get_file(session_split[0].toLatin1(), session_split[1].toLatin1(), files[files_iter], SESSION_DATA);
-        get_session_info(session_split[0].toLatin1(), session_split[1].toLatin1());
+            get_file(session_split[0].toLatin1(), session_split[1].toLatin1(), files[files_iter], SESSION_DATA, save_dir);
+        get_session_info(session_split[0].toLatin1(), session_split[1].toLatin1(), save_dir);
     }
 
     emit session_done();
 }
 
-void V800usb::get_session_info(QByteArray date, QByteArray time)
+void V800usb::get_session_info(QByteArray date, QByteArray time, QString save_dir)
 {
-    get_file(date, time, QByteArray("TSESS.BPB"), SESSION_INFO);
-    get_file(date, time, QByteArray("PHYSDATA.BPB"), SESSION_INFO);
+    get_file(date, time, QByteArray("TSESS.BPB"), SESSION_INFO, save_dir);
+    get_file(date, time, QByteArray("PHYSDATA.BPB"), SESSION_INFO, save_dir);
 }
 
 QList<QByteArray> V800usb::get_all_dates()
@@ -286,7 +286,7 @@ QList<QByteArray> V800usb::get_all_files(QByteArray date, QByteArray time)
     return files;
 }
 
-void V800usb::get_file(QByteArray date, QByteArray time, QByteArray file, int type)
+void V800usb::get_file(QByteArray date, QByteArray time, QByteArray file, int type, QString save_dir)
 {   
     QFile *out_file;
     QByteArray packet, full;
@@ -338,8 +338,14 @@ void V800usb::get_file(QByteArray date, QByteArray time, QByteArray file, int ty
             usb_state = 1;
             break;
         case 4:
-            QString session_path = (QString("%1\\%2").arg(date.constData())).arg(time.constData());
-            QString session_full_name = (QString("%1\\%2\\%3").arg(date.constData()).arg(time.constData()).arg(file.constData()));
+#if defined(Q_OS_WIN)
+            QString session_path = (QString("%1\\%2\\%3").arg(save_dir).arg(date.constData())).arg(time.constData());
+            QString session_full_name = (QString("%1\\%2\\%3\\%4").arg(save_dir).arg(date.constData()).arg(time.constData()).arg(file.constData()));
+#endif
+#if defined(Q_OS_LINUX) || defined(Q_OS_MAC)
+            QString session_path = (QString("%1/%2/%3").arg(save_dir).arg(date.constData())).arg(time.constData());
+            QString session_full_name = (QString("%1/%2/%3/%4").arg(save_dir).arg(date.constData()).arg(time.constData()).arg(file.constData()));
+#endif
             QDir session_dir = QDir(session_path);
 
             if(!session_dir.exists())

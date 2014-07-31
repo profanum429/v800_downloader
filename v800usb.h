@@ -20,7 +20,7 @@ signals:
 
 public slots:
     void start();
-    void get_session(QByteArray session);
+    void get_session(QByteArray session, QString save_dir);
 
 private:
     QList<QByteArray> extract_dir_and_files(QByteArray full);
@@ -32,8 +32,8 @@ private:
     QList<QByteArray> get_all_dates();
     QList<QByteArray> get_all_times(QByteArray date);
     QList<QByteArray> get_all_files(QByteArray date, QByteArray time);
-    void get_file(QByteArray date, QByteArray time, QByteArray file, int type);
-    void get_session_info(QByteArray date, QByteArray time);
+    void get_file(QByteArray date, QByteArray time, QByteArray file, int type, QString save_dir);
+    void get_session_info(QByteArray date, QByteArray time, QString save_dir);
 
     void get_all_sessions();
 
