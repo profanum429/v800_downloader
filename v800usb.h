@@ -3,6 +3,10 @@
 
 #include <QObject>
 
+#if defined(Q_OS_WIN)
+#include <QUuid>
+#endif
+
 class native_usb;
 
 class V800usb : public QObject
@@ -20,24 +24,31 @@ signals:
 
 public slots:
     void start();
-    void get_session(QByteArray session, QString save_dir);
+    void get_session(QByteArray session, QString save_dir, bool bipolar_output);
 
 private:
     QList<QByteArray> extract_dir_and_files(QByteArray full);
     QByteArray generate_request(QString request);
     QByteArray generate_ack(unsigned char packet_num);
     int is_end(QByteArray packet);
-    QByteArray add_to_full(QByteArray packet, QByteArray full, int full_size);
+    QByteArray add_to_full(QByteArray packet, QByteArray full, bool initial_packet, bool final_packet);
 
     QList<QByteArray> get_all_dates();
     QList<QByteArray> get_all_times(QByteArray date);
     QList<QByteArray> get_all_files(QByteArray date, QByteArray time);
-    void get_file(QByteArray date, QByteArray time, QByteArray file, int type, QString save_dir);
-    void get_session_info(QByteArray date, QByteArray time, QString save_dir);
+    void get_file(QByteArray date, QByteArray time, QByteArray file, int type);
+    void get_session_info(QByteArray date, QByteArray time);
 
     void get_all_sessions();
 
     native_usb *usb;
+
+    QString save_dir;
+    bool bipolar_output;
+
+#if defined(Q_OS_WIN)
+    QUuid bipolar_uuid;
+#endif
 
     enum {
         SESSION_DATA = 0,

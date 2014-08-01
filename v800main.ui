@@ -26,12 +26,25 @@
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="downloadBtn">
-       <property name="text">
-        <string>Download
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <item>
+        <widget class="QCheckBox" name="bipolarChk">
+         <property name="text">
+          <string>Include
+Bipolar 
+Output</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="downloadBtn">
+         <property name="text">
+          <string>Download
 Exercises</string>
-       </property>
-      </widget>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </item>
     </layout>
    </item>

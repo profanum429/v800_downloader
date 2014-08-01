@@ -15,8 +15,11 @@ TEMPLATE = app
 SOURCES += main.cpp\
         v800main.cpp \
     v800usb.cpp \
-    native_usb.cpp \
-    rawhid_api.c
+    native_usb.cpp
+
+macx {
+    SOURCES += rawhid_api.c
+}
 
 HEADERS  += v800main.h \
     v800usb.h \

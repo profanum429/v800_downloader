@@ -24,7 +24,7 @@ V800Main::V800Main(QWidget *parent) :
     connect(usb, SIGNAL(session_done()), this, SLOT(handle_session_done()));
     connect(usb, SIGNAL(ready()), this, SLOT(handle_ready()));
     connect(usb, SIGNAL(not_ready()), this, SLOT(handle_not_ready()));
-    connect(this, SIGNAL(get_session(QByteArray, QString)), usb, SLOT(get_session(QByteArray, QString)));
+    connect(this, SIGNAL(get_session(QByteArray, QString, bool)), usb, SLOT(get_session(QByteArray, QString, bool)));
 
     connect(usb_thread, SIGNAL(started()), usb, SLOT(start()));
     usb_thread->start();
@@ -33,8 +33,9 @@ V800Main::V800Main(QWidget *parent) :
     ui->exerciseTree->setColumnCount(1);
     ui->exerciseTree->setHeaderLabel("Session");
 
-    ui->downloadBtn->setEnabled(false);
     ui->exerciseTree->setEnabled(false);
+    ui->downloadBtn->setEnabled(false);
+    ui->bipolarChk->setEnabled(false);
 }
 
 V800Main::~V800Main()
@@ -56,8 +57,9 @@ void V800Main::handle_not_ready()
 void V800Main::handle_ready()
 {
     v800_ready = true;
-    ui->downloadBtn->setEnabled(true);
     ui->exerciseTree->setEnabled(true);
+    ui->downloadBtn->setEnabled(true);
+    ui->bipolarChk->setEnabled(true);
 }
 
 void V800Main::handle_all_sessions(QList<QByteArray> sessions)
@@ -80,6 +82,7 @@ void V800Main::handle_session_done()
     {
         ui->exerciseTree->setEnabled(true);
         ui->downloadBtn->setEnabled(true);
+        ui->bipolarChk->setEnabled(true);
     }
 }
 
@@ -89,12 +92,14 @@ void V800Main::on_downloadBtn_clicked()
 
     ui->exerciseTree->setEnabled(false);
     ui->downloadBtn->setEnabled(false);
+    ui->bipolarChk->setEnabled(false);
 
     QString save_dir = QFileDialog::getExistingDirectory(this, tr("Open Directory"), QDir::homePath(), QFileDialog::ShowDirsOnly);
     if(save_dir == "")
     {
         ui->exerciseTree->setEnabled(true);
         ui->downloadBtn->setEnabled(true);
+        ui->bipolarChk->setEnabled(true);
 
         return;
     }
@@ -105,7 +110,7 @@ void V800Main::on_downloadBtn_clicked()
         if(ui->exerciseTree->topLevelItem(item_iter)->checkState(0) == Qt::Checked)
         {
             session_cnt++;
-            emit get_session(ui->exerciseTree->topLevelItem(item_iter)->text(0).toLatin1(), save_dir);
+            emit get_session(ui->exerciseTree->topLevelItem(item_iter)->text(0).toLatin1(), save_dir, ui->bipolarChk->isChecked());
         }
     }
 }

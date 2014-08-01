@@ -13,11 +13,13 @@
 #include <QtWidgets/QAction>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QButtonGroup>
+#include <QtWidgets/QCheckBox>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QHeaderView>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QTreeWidget>
+#include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QWidget>
 
 QT_BEGIN_NAMESPACE
@@ -28,6 +30,8 @@ public:
     QGridLayout *gridLayout;
     QHBoxLayout *horizontalLayout;
     QTreeWidget *exerciseTree;
+    QVBoxLayout *verticalLayout;
+    QCheckBox *bipolarChk;
     QPushButton *downloadBtn;
 
     void setupUi(QWidget *V800Main)
@@ -50,10 +54,21 @@ public:
 
         horizontalLayout->addWidget(exerciseTree);
 
+        verticalLayout = new QVBoxLayout();
+        verticalLayout->setSpacing(6);
+        verticalLayout->setObjectName(QStringLiteral("verticalLayout"));
+        bipolarChk = new QCheckBox(V800Main);
+        bipolarChk->setObjectName(QStringLiteral("bipolarChk"));
+
+        verticalLayout->addWidget(bipolarChk);
+
         downloadBtn = new QPushButton(V800Main);
         downloadBtn->setObjectName(QStringLiteral("downloadBtn"));
 
-        horizontalLayout->addWidget(downloadBtn);
+        verticalLayout->addWidget(downloadBtn);
+
+
+        horizontalLayout->addLayout(verticalLayout);
 
 
         gridLayout->addLayout(horizontalLayout, 0, 0, 1, 1);
@@ -67,6 +82,9 @@ public:
     void retranslateUi(QWidget *V800Main)
     {
         V800Main->setWindowTitle(QApplication::translate("V800Main", "V800Main", 0));
+        bipolarChk->setText(QApplication::translate("V800Main", "Include\n"
+"Bipolar \n"
+"Output", 0));
         downloadBtn->setText(QApplication::translate("V800Main", "Download\n"
 "Exercises", 0));
     } // retranslateUi

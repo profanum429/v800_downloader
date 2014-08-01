@@ -4,6 +4,8 @@
 #include <QDateTime>
 #include <QStringList>
 #include <QDir>
+#include <QStandardPaths>
+#include <QUuid>
 #include <stdio.h>
 
 #include "native_usb.h"
@@ -78,7 +80,7 @@ void V800usb::get_all_sessions()
     emit all_sessions(sessions);
 }
 
-void V800usb::get_session(QByteArray session, QString save_dir)
+void V800usb::get_session(QByteArray session, QString save_dir, bool bipolar_output)
 {
     QDateTime session_time = QDateTime::fromString(session.constData(), Qt::TextDate);
     QString session_str = session_time.toString("yyyyMMdd/HHmmss");
@@ -86,21 +88,28 @@ void V800usb::get_session(QByteArray session, QString save_dir)
     QList<QByteArray> files;
     int files_iter;
 
+    this->save_dir = save_dir;
+    this->bipolar_output = bipolar_output;
+
     if(session_split.length() == 2)
     {
+#if defined(Q_OS_WIN)
+        bipolar_uuid = QUuid::createUuid();
+#endif
+
         files = get_all_files(session_split[0].toLatin1(), session_split[1].toLatin1());
         for(files_iter = 0; files_iter < files.length(); files_iter++)
-            get_file(session_split[0].toLatin1(), session_split[1].toLatin1(), files[files_iter], SESSION_DATA, save_dir);
-        get_session_info(session_split[0].toLatin1(), session_split[1].toLatin1(), save_dir);
+            get_file(session_split[0].toLatin1(), session_split[1].toLatin1(), files[files_iter], SESSION_DATA);
+        get_session_info(session_split[0].toLatin1(), session_split[1].toLatin1());
     }
 
     emit session_done();
 }
 
-void V800usb::get_session_info(QByteArray date, QByteArray time, QString save_dir)
+void V800usb::get_session_info(QByteArray date, QByteArray time)
 {
-    get_file(date, time, QByteArray("TSESS.BPB"), SESSION_INFO, save_dir);
-    get_file(date, time, QByteArray("PHYSDATA.BPB"), SESSION_INFO, save_dir);
+    get_file(date, time, QByteArray("TSESS.BPB"), SESSION_INFO);
+    get_file(date, time, QByteArray("PHYSDATA.BPB"), SESSION_INFO);
 }
 
 QList<QByteArray> V800usb::get_all_dates()
@@ -127,17 +136,21 @@ QList<QByteArray> V800usb::get_all_dates()
             packet.clear();
             packet = usb->read_usb();
 
-            full = add_to_full(packet, full, initial_packet);
+            // check for end of buffer
+            if(is_end(packet))
+            {
+                full = add_to_full(packet, full, initial_packet, true);
+                usb_state = 4;
+            }
+            else
+            {
+                full = add_to_full(packet, full, initial_packet, false);
+                usb_state = 2;
+            }
 
             // initial packet seems to always have two extra bytes in the front, 0x00 0x00
             if(initial_packet)
-                initial_packet = 0;
-
-            // check for end of buffer
-            if(is_end(packet))
-                usb_state = 4;
-            else
-                usb_state = 2;
+                initial_packet = false;
             break;
         case 2: // send an ack packet
             packet.clear();
@@ -188,17 +201,21 @@ QList<QByteArray> V800usb::get_all_times(QByteArray date)
             packet.clear();
             packet = usb->read_usb();
 
-            full = add_to_full(packet, full, initial_packet);
+            // check for end of buffer
+            if(is_end(packet))
+            {
+                full = add_to_full(packet, full, initial_packet, true);
+                usb_state = 4;
+            }
+            else
+            {
+                full = add_to_full(packet, full, initial_packet, false);
+                usb_state = 2;
+            }
 
             // initial packet seems to always have two extra bytes in the front, 0x00 0x00
             if(initial_packet)
-                initial_packet = 0;
-
-            // check for end of buffer
-            if(is_end(packet))
-                usb_state = 4;
-            else
-                usb_state = 2;
+                initial_packet = false;
             break;
         case 2: // send an ack packet
             packet.clear();
@@ -249,17 +266,21 @@ QList<QByteArray> V800usb::get_all_files(QByteArray date, QByteArray time)
             packet.clear();
             packet = usb->read_usb();
 
-            full = add_to_full(packet, full, initial_packet);
+            // check for end of buffer
+            if(is_end(packet))
+            {
+                full = add_to_full(packet, full, initial_packet, true);
+                usb_state = 4;
+            }
+            else
+            {
+                full = add_to_full(packet, full, initial_packet, false);
+                usb_state = 2;
+            }
 
             // initial packet seems to always have two extra bytes in the front, 0x00 0x00
             if(initial_packet)
-                initial_packet = 0;
-
-            // check for end of buffer
-            if(is_end(packet))
-                usb_state = 4;
-            else
-                usb_state = 2;
+                initial_packet = false;
             break;
         case 2: // send an ack packet
             packet.clear();
@@ -286,11 +307,12 @@ QList<QByteArray> V800usb::get_all_files(QByteArray date, QByteArray time)
     return files;
 }
 
-void V800usb::get_file(QByteArray date, QByteArray time, QByteArray file, int type, QString save_dir)
+void V800usb::get_file(QByteArray date, QByteArray time, QByteArray file, int type)
 {   
     QFile *out_file;
     QByteArray packet, full;
-    int cont = 1, usb_state = 0, packet_num = 0, initial_packet = 1;
+    int cont = 1, usb_state = 0, packet_num = 0;
+    bool initial_packet = true;
 
     while(cont)
     {
@@ -313,17 +335,21 @@ void V800usb::get_file(QByteArray date, QByteArray time, QByteArray file, int ty
             packet.clear();
             packet = usb->read_usb();
 
-            full = add_to_full(packet, full, initial_packet);
+            // check for end of buffer
+            if(is_end(packet))
+            {
+                full = add_to_full(packet, full, initial_packet, true);
+                usb_state = 4;
+            }
+            else
+            {
+                full = add_to_full(packet, full, initial_packet, false);
+                usb_state = 2;
+            }
 
             // initial packet seems to always have two extra bytes in the front, 0x00 0x00
             if(initial_packet)
-                initial_packet = 0;
-
-            // check for end of buffer
-            if(is_end(packet))
-                usb_state = 4;
-            else
-                usb_state = 2;
+                initial_packet = false;
             break;
         case 2: // send an ack packet
             packet.clear();
@@ -338,14 +364,9 @@ void V800usb::get_file(QByteArray date, QByteArray time, QByteArray file, int ty
             usb_state = 1;
             break;
         case 4:
-#if defined(Q_OS_WIN)
-            QString session_path = (QString("%1\\%2\\%3").arg(save_dir).arg(date.constData())).arg(time.constData());
-            QString session_full_name = (QString("%1\\%2\\%3\\%4").arg(save_dir).arg(date.constData()).arg(time.constData()).arg(file.constData()));
-#endif
-#if defined(Q_OS_LINUX) || defined(Q_OS_MAC)
-            QString session_path = (QString("%1/%2/%3").arg(save_dir).arg(date.constData())).arg(time.constData());
-            QString session_full_name = (QString("%1/%2/%3/%4").arg(save_dir).arg(date.constData()).arg(time.constData()).arg(file.constData()));
-#endif
+            QString session_path = QDir::toNativeSeparators(QString("%1/%2/%3").arg(save_dir).arg(date.constData()).arg(time.constData()));
+            QString session_full_name = QDir::toNativeSeparators(QString("%1/%2/%3/%4").arg(save_dir).arg(date.constData()).arg(time.constData()).arg(file.constData()));
+
             QDir session_dir = QDir(session_path);
 
             if(!session_dir.exists())
@@ -355,6 +376,40 @@ void V800usb::get_file(QByteArray date, QByteArray time, QByteArray file, int ty
             out_file->open(QIODevice::WriteOnly);
             out_file->write(full);
             out_file->close();
+
+#if defined(Q_OS_WIN)
+            if(bipolar_output)
+            {
+                QDir bipolar_dir(QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + QString("/Polar/PolarFlowSync/export"));
+
+                QString bipolar_dest("");
+                if(QString(file).compare("TSESS.BPB") == 0)
+                    bipolar_dest = (QString("%1/v2-users-0000000-training-sessions-%2-create").arg(bipolar_dir.absolutePath()).arg(bipolar_uuid.toString().remove('-')));
+                else if(QString(file).compare("PHYSDATA.BPB") == 0)
+                    bipolar_dest = (QString("%1/v2-users-0000000-training-sessions-%2-physical-information").arg(bipolar_dir.absolutePath()).arg(bipolar_uuid.toString().remove('-')));
+                else if(QString(file).compare("BASE.BPB") == 0)
+                    bipolar_dest = (QString("%1/v2-users-0000000-training-sessions-%2-exercises-%3-create").arg(bipolar_dir.absolutePath()).arg(bipolar_uuid.toString().remove('-')).arg(bipolar_uuid.toString().remove('-')));
+                else if(QString(file).compare("ALAPS.BPB") == 0)
+                    bipolar_dest = (QString("%1/v2-users-0000000-training-sessions-%2-exercises-%3-autolaps").arg(bipolar_dir.absolutePath()).arg(bipolar_uuid.toString().remove('-')).arg(bipolar_uuid.toString().remove('-')));
+                else if(QString(file).compare("LAPS.BPB") == 0)
+                    bipolar_dest = (QString("%1/v2-users-0000000-training-sessions-%2-exercises-%3-laps").arg(bipolar_dir.absolutePath()).arg(bipolar_uuid.toString().remove('-')).arg(bipolar_uuid.toString().remove('-')));
+                else if(QString(file).compare("ROUTE.GZB") == 0)
+                    bipolar_dest = (QString("%1/v2-users-0000000-training-sessions-%2-exercises-%3-route").arg(bipolar_dir.absolutePath()).arg(bipolar_uuid.toString().remove('-')).arg(bipolar_uuid.toString().remove('-')));
+                else if(QString(file).compare("SAMPLES.GZB") == 0)
+                    bipolar_dest = (QString("%1/v2-users-0000000-training-sessions-%2-exercises-%3-samples").arg(bipolar_dir.absolutePath()).arg(bipolar_uuid.toString().remove('-')).arg(bipolar_uuid.toString().remove('-')));
+                else if(QString(file).compare("STATS.BPB") == 0)
+                    bipolar_dest = (QString("%1/v2-users-0000000-training-sessions-%2-exercises-%3-statistics").arg(bipolar_dir.absolutePath()).arg(bipolar_uuid.toString().remove('-')).arg(bipolar_uuid.toString().remove('-')));
+                else if(QString(file).compare("ZONES.BPB") == 0)
+                    bipolar_dest = (QString("%1/v2-users-0000000-training-sessions-%2-exercises-%3-zones").arg(bipolar_dir.absolutePath()).arg(bipolar_uuid.toString().remove('-')).arg(bipolar_uuid.toString().remove('-')));
+                else if(QString(file).compare("RR.GZB") == 0)
+                    bipolar_dest = (QString("%1/v2-users-0000000-training-sessions-%2-exercises-%3-rrsamples").arg(bipolar_dir.absolutePath()).arg(bipolar_uuid.toString().remove('-')).arg(bipolar_uuid.toString().remove('-')));
+
+                qDebug("Path: %s", bipolar_dest.toLatin1().constData());
+
+                if(bipolar_dest != "")
+                    QFile::copy(session_full_name, QDir::toNativeSeparators(bipolar_dest));
+            }
+#endif
 
             qDebug("Done getting file from V800");
 
@@ -446,22 +501,32 @@ int V800usb::is_end(QByteArray packet)
         return 1;
 }
 
-QByteArray V800usb::add_to_full(QByteArray packet, QByteArray full, int initial_packet)
+QByteArray V800usb::add_to_full(QByteArray packet, QByteArray full, bool initial_packet, bool final_packet)
 {
     QByteArray new_full = full;
-    unsigned int size = packet[1] >> 2;
+    unsigned int size = (unsigned char)packet[1] >> 2;
 
     if(initial_packet)
     {
-        size -= 3;
+        // final packets have a trailing 0x00 we don't want
+        if(final_packet)
+            size -= 4;
+        else
+            size -= 3;
+
         packet.remove(0, 5);
-        new_full.append(packet);
+        new_full.append(packet.constData(), size);
     }
     else
     {
-        size -= 1;
+        // final packets have a trailing 0x00 we don't want
+        if(final_packet)
+            size -= 2;
+        else
+            size -= 1;
+
         packet.remove(0, 3);
-        new_full.append(packet);
+        new_full.append(packet.constData(), size);
     }
 
     return new_full;
