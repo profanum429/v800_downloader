@@ -373,7 +373,6 @@ void V800usb::get_file(QByteArray date, QByteArray time, QByteArray file, int ty
             out_file->write(full);
             out_file->close();
 
-#if defined(Q_OS_WIN)
             if(bipolar_output)
             {
                 QDir bipolar_dir(QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + QString("/Polar/PolarFlowSync/export"));
@@ -406,7 +405,6 @@ void V800usb::get_file(QByteArray date, QByteArray time, QByteArray file, int ty
                 if(bipolar_dest != "")
                     QFile::copy(session_full_name, QDir::toNativeSeparators(bipolar_dest));
             }
-#endif
 
             qDebug("Done getting file from V800");
 
