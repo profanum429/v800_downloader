@@ -93,10 +93,6 @@ void V800usb::get_session(QByteArray session, QString save_dir, bool bipolar_out
 
     if(session_split.length() == 2)
     {
-#if defined(Q_OS_WIN)
-        bipolar_uuid = QUuid::createUuid();
-#endif
-
         files = get_all_files(session_split[0].toLatin1(), session_split[1].toLatin1());
         for(files_iter = 0; files_iter < files.length(); files_iter++)
             get_file(session_split[0].toLatin1(), session_split[1].toLatin1(), files[files_iter], SESSION_DATA);
@@ -381,28 +377,29 @@ void V800usb::get_file(QByteArray date, QByteArray time, QByteArray file, int ty
             if(bipolar_output)
             {
                 QDir bipolar_dir(QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + QString("/Polar/PolarFlowSync/export"));
+                QString tag = QDateTime(QDate::fromString(date, "yyyyMMdd"), QTime::fromString(time, "HHmmss")).toString("yyyyMMddhhmmss");
 
                 QString bipolar_dest("");
                 if(QString(file).compare("TSESS.BPB") == 0)
-                    bipolar_dest = (QString("%1/v2-users-0000000-training-sessions-%2-create").arg(bipolar_dir.absolutePath()).arg(bipolar_uuid.toString().remove('-')));
+                    bipolar_dest = (QString("%1/v2-users-0000000-training-sessions-%2-create").arg(bipolar_dir.absolutePath()).arg(tag));
                 else if(QString(file).compare("PHYSDATA.BPB") == 0)
-                    bipolar_dest = (QString("%1/v2-users-0000000-training-sessions-%2-physical-information").arg(bipolar_dir.absolutePath()).arg(bipolar_uuid.toString().remove('-')));
+                    bipolar_dest = (QString("%1/v2-users-0000000-training-sessions-%2-physical-information").arg(bipolar_dir.absolutePath()).arg(tag));
                 else if(QString(file).compare("BASE.BPB") == 0)
-                    bipolar_dest = (QString("%1/v2-users-0000000-training-sessions-%2-exercises-%3-create").arg(bipolar_dir.absolutePath()).arg(bipolar_uuid.toString().remove('-')).arg(bipolar_uuid.toString().remove('-')));
+                    bipolar_dest = (QString("%1/v2-users-0000000-training-sessions-%2-exercises-%3-create").arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
                 else if(QString(file).compare("ALAPS.BPB") == 0)
-                    bipolar_dest = (QString("%1/v2-users-0000000-training-sessions-%2-exercises-%3-autolaps").arg(bipolar_dir.absolutePath()).arg(bipolar_uuid.toString().remove('-')).arg(bipolar_uuid.toString().remove('-')));
+                    bipolar_dest = (QString("%1/v2-users-0000000-training-sessions-%2-exercises-%3-autolaps").arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
                 else if(QString(file).compare("LAPS.BPB") == 0)
-                    bipolar_dest = (QString("%1/v2-users-0000000-training-sessions-%2-exercises-%3-laps").arg(bipolar_dir.absolutePath()).arg(bipolar_uuid.toString().remove('-')).arg(bipolar_uuid.toString().remove('-')));
+                    bipolar_dest = (QString("%1/v2-users-0000000-training-sessions-%2-exercises-%3-laps").arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
                 else if(QString(file).compare("ROUTE.GZB") == 0)
-                    bipolar_dest = (QString("%1/v2-users-0000000-training-sessions-%2-exercises-%3-route").arg(bipolar_dir.absolutePath()).arg(bipolar_uuid.toString().remove('-')).arg(bipolar_uuid.toString().remove('-')));
+                    bipolar_dest = (QString("%1/v2-users-0000000-training-sessions-%2-exercises-%3-route").arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
                 else if(QString(file).compare("SAMPLES.GZB") == 0)
-                    bipolar_dest = (QString("%1/v2-users-0000000-training-sessions-%2-exercises-%3-samples").arg(bipolar_dir.absolutePath()).arg(bipolar_uuid.toString().remove('-')).arg(bipolar_uuid.toString().remove('-')));
+                    bipolar_dest = (QString("%1/v2-users-0000000-training-sessions-%2-exercises-%3-samples").arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
                 else if(QString(file).compare("STATS.BPB") == 0)
-                    bipolar_dest = (QString("%1/v2-users-0000000-training-sessions-%2-exercises-%3-statistics").arg(bipolar_dir.absolutePath()).arg(bipolar_uuid.toString().remove('-')).arg(bipolar_uuid.toString().remove('-')));
+                    bipolar_dest = (QString("%1/v2-users-0000000-training-sessions-%2-exercises-%3-statistics").arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
                 else if(QString(file).compare("ZONES.BPB") == 0)
-                    bipolar_dest = (QString("%1/v2-users-0000000-training-sessions-%2-exercises-%3-zones").arg(bipolar_dir.absolutePath()).arg(bipolar_uuid.toString().remove('-')).arg(bipolar_uuid.toString().remove('-')));
+                    bipolar_dest = (QString("%1/v2-users-0000000-training-sessions-%2-exercises-%3-zones").arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
                 else if(QString(file).compare("RR.GZB") == 0)
-                    bipolar_dest = (QString("%1/v2-users-0000000-training-sessions-%2-exercises-%3-rrsamples").arg(bipolar_dir.absolutePath()).arg(bipolar_uuid.toString().remove('-')).arg(bipolar_uuid.toString().remove('-')));
+                    bipolar_dest = (QString("%1/v2-users-0000000-training-sessions-%2-exercises-%3-rrsamples").arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
 
                 qDebug("Path: %s", bipolar_dest.toLatin1().constData());
 

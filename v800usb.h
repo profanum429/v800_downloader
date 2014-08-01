@@ -3,10 +3,6 @@
 
 #include <QObject>
 
-#if defined(Q_OS_WIN)
-#include <QUuid>
-#endif
-
 class native_usb;
 
 class V800usb : public QObject
@@ -45,10 +41,6 @@ private:
 
     QString save_dir;
     bool bipolar_output;
-
-#if defined(Q_OS_WIN)
-    QUuid bipolar_uuid;
-#endif
 
     enum {
         SESSION_DATA = 0,

@@ -7,3 +7,7 @@ v800_downloader.pro.user
 debug/tmp/ui_v800main.h
 debug/tmp/moc_v800usb.cpp
 debug/tmp/moc_v800main.cpp
+release/tmp/moc_native_usb.cpp
+release/tmp/moc_v800main.cpp
+release/tmp/moc_v800usb.cpp
+release/tmp/ui_v800main.h
