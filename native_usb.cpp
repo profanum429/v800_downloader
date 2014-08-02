@@ -1,5 +1,6 @@
 #include "native_usb.h"
 #include <QByteArray>
+#include <unistd.h>
 
 #if defined(Q_OS_MAC)
 extern "C"
@@ -36,6 +37,15 @@ int native_usb::open_usb(int vid, int pid)
         return -1;
     }
 
+#if defined(Q_OS_LINUX)
+    r = libusb_detach_kernel_driver(usb, 0);
+    if(r != 0)
+    {
+        qDebug("Detach Kernel Driver: %s", libusb_error_name(r));
+        return -1;
+    }
+#endif
+
     r = libusb_claim_interface(usb, 0);
     if(r != 0)
     {
@@ -48,7 +58,12 @@ int native_usb::open_usb(int vid, int pid)
     libusb_close(usb);
     usb = NULL;
 
+#if defined(Q_OS_WIN)
     Sleep(500);
+#endif
+#if defined(Q_OS_LINUX)
+    usleep(500000);
+#endif
 
     qDebug("Reopening the USB device...");
     usb = libusb_open_device_with_vid_pid(NULL, vid, pid);
@@ -65,7 +80,12 @@ int native_usb::open_usb(int vid, int pid)
         return -1;
     }
 
+#if defined(Q_OS_WIN)
     Sleep(500);
+#endif
+#if defined(Q_OS_LINUX)
+    usleep(500000);
+#endif
 
     return 0;
 #endif

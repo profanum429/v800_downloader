@@ -37,3 +37,5 @@ UI_DIR = $$DESTDIR/tmp
 osx:LIBS += -framework CoreFoundation -framework IOKit
 win32:INCLUDEPATH += C:/Qt/libusb-1.0
 win32:LIBS += C:/Qt/libusb-1.0/libusb-1.0.a
+unix:!macx:INCLUDEPATH += /usr/local/include/libusb-1.0
+unix:!macx:LIBS += /usr/local/lib/libusb-1.0.a -ludev
