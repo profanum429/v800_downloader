@@ -18,12 +18,12 @@ public:
     ~V800Main();
 
 signals:
-    void get_session(QByteArray session, QString save_dir, bool bipolar_output);
+    void get_session(QString session, QString save_dir, bool bipolar_output);
 
 private slots:
     void handle_ready();
     void handle_not_ready();
-    void handle_all_sessions(QList<QByteArray> sessions);
+    void handle_all_sessions(QList<QString> sessions);
     void handle_session_done();
     void on_downloadBtn_clicked();
 

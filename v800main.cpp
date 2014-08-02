@@ -11,7 +11,7 @@ V800Main::V800Main(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::V800Main)
 {
-    qRegisterMetaType<QList<QByteArray> >("QList<QByteArray>");
+    qRegisterMetaType<QList<QString> >("QList<QString>");
 
     v800_ready = false;
     session_cnt = 0;
@@ -20,11 +20,11 @@ V800Main::V800Main(QWidget *parent) :
     usb = new V800usb();
     usb->moveToThread(usb_thread);
 
-    connect(usb, SIGNAL(all_sessions(QList<QByteArray>)), this, SLOT(handle_all_sessions(QList<QByteArray>)));
+    connect(usb, SIGNAL(all_sessions(QList<QString>)), this, SLOT(handle_all_sessions(QList<QString>)));
     connect(usb, SIGNAL(session_done()), this, SLOT(handle_session_done()));
     connect(usb, SIGNAL(ready()), this, SLOT(handle_ready()));
     connect(usb, SIGNAL(not_ready()), this, SLOT(handle_not_ready()));
-    connect(this, SIGNAL(get_session(QByteArray, QString, bool)), usb, SLOT(get_session(QByteArray, QString, bool)));
+    connect(this, SIGNAL(get_session(QString, QString, bool)), usb, SLOT(get_session(QString, QString, bool)));
 
     connect(usb_thread, SIGNAL(started()), usb, SLOT(start()));
     usb_thread->start();
@@ -62,13 +62,13 @@ void V800Main::handle_ready()
     ui->bipolarChk->setEnabled(true);
 }
 
-void V800Main::handle_all_sessions(QList<QByteArray> sessions)
+void V800Main::handle_all_sessions(QList<QString> sessions)
 {
     QList<QTreeWidgetItem *> items;
     int sessions_iter = 0;
     for(sessions_iter = 0; sessions_iter < sessions.length(); sessions_iter++)
     {
-        QTreeWidgetItem *item = new QTreeWidgetItem((QTreeWidget *)0, QStringList(QString(sessions[sessions_iter].constData())));
+        QTreeWidgetItem *item = new QTreeWidgetItem((QTreeWidget *)0, QStringList(QString(sessions[sessions_iter])));
         item->setCheckState(0, Qt::Unchecked);
         items.append(item);
     }
@@ -110,7 +110,7 @@ void V800Main::on_downloadBtn_clicked()
         if(ui->exerciseTree->topLevelItem(item_iter)->checkState(0) == Qt::Checked)
         {
             session_cnt++;
-            emit get_session(ui->exerciseTree->topLevelItem(item_iter)->text(0).toLatin1(), save_dir, ui->bipolarChk->isChecked());
+            emit get_session(ui->exerciseTree->topLevelItem(item_iter)->text(0), save_dir, ui->bipolarChk->isChecked());
         }
     }
 }

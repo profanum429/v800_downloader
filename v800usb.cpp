@@ -41,7 +41,8 @@ void V800usb::start()
 
 void V800usb::get_all_sessions()
 {
-    QList<QByteArray> dates, times, files, sessions;
+    QList<QByteArray> dates, times, files;
+    QList<QString> sessions;
     int dates_iter, times_iter, files_iter;
     bool session_exists = false;
 
@@ -68,10 +69,10 @@ void V800usb::get_all_sessions()
                 QString date(dates[dates_iter].constData());
                 QString time(times[times_iter].constData());
 
-                QString combined((QString("%1%2").arg(date).arg(time).toLatin1()));
+                QString combined((QString("%1%2").arg(date).arg(time).toUtf8()));
                 QDateTime session_time = QDateTime::fromString(combined, "yyyyMMdd/HHmmss/");
 
-                sessions.append(QByteArray(session_time.toString(Qt::TextDate).toLatin1()));
+                sessions.append(session_time.toString(Qt::TextDate));
                 session_exists = false;
             }
         }
@@ -80,9 +81,9 @@ void V800usb::get_all_sessions()
     emit all_sessions(sessions);
 }
 
-void V800usb::get_session(QByteArray session, QString save_dir, bool bipolar_output)
+void V800usb::get_session(QString session, QString save_dir, bool bipolar_output)
 {
-    QDateTime session_time = QDateTime::fromString(session.constData(), Qt::TextDate);
+    QDateTime session_time = QDateTime::fromString(session, Qt::TextDate);
     QString session_str = session_time.toString("yyyyMMdd/HHmmss");
     QStringList session_split = session_str.split('/');
     QList<QByteArray> files;
@@ -93,10 +94,10 @@ void V800usb::get_session(QByteArray session, QString save_dir, bool bipolar_out
 
     if(session_split.length() == 2)
     {
-        files = get_all_files(session_split[0].toLatin1(), session_split[1].toLatin1());
+        files = get_all_files(session_split[0].toUtf8(), session_split[1].toUtf8());
         for(files_iter = 0; files_iter < files.length(); files_iter++)
-            get_file(session_split[0].toLatin1(), session_split[1].toLatin1(), files[files_iter], SESSION_DATA);
-        get_session_info(session_split[0].toLatin1(), session_split[1].toLatin1());
+            get_file(session_split[0].toUtf8(), session_split[1].toUtf8(), files[files_iter], SESSION_DATA);
+        get_session_info(session_split[0].toUtf8(), session_split[1].toUtf8());
     }
 
     emit session_done();
@@ -310,6 +311,8 @@ void V800usb::get_file(QByteArray date, QByteArray time, QByteArray file, int ty
     int cont = 1, usb_state = 0, packet_num = 0;
     bool initial_packet = true;
 
+    qDebug("Date: %s\nTime: %s\nFile: %s", date.constData(), time.constData(), file.constData());
+
     while(cont)
     {
         // usb state machine for reading
@@ -400,7 +403,7 @@ void V800usb::get_file(QByteArray date, QByteArray time, QByteArray file, int ty
                 else if(QString(file).compare("RR.GZB") == 0)
                     bipolar_dest = (QString("%1/v2-users-0000000-training-sessions-%2-exercises-%3-rrsamples").arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
 
-                qDebug("Path: %s", bipolar_dest.toLatin1().constData());
+                qDebug("Path: %s", bipolar_dest.toUtf8().constData());
 
                 if(bipolar_dest != "")
                     QFile::copy(session_full_name, QDir::toNativeSeparators(bipolar_dest));

@@ -13,14 +13,14 @@ public:
     ~V800usb();
 
 signals:
-    void all_sessions(QList<QByteArray> sessions);
+    void all_sessions(QList<QString> sessions);
     void session_done();
     void ready();
     void not_ready();
 
 public slots:
     void start();
-    void get_session(QByteArray session, QString save_dir, bool bipolar_output);
+    void get_session(QString session, QString save_dir, bool bipolar_output);
 
 private:
     QList<QByteArray> extract_dir_and_files(QByteArray full);
