@@ -42,7 +42,6 @@ int native_usb::open_usb(int vid, int pid)
     if(r != 0)
     {
         qDebug("Detach Kernel Driver: %s", libusb_error_name(r));
-        return -1;
     }
 #endif
 
@@ -190,6 +189,10 @@ int native_usb::close_usb()
         qDebug("Release interface: %s", libusb_error_name(r));
         return -1;
     }
+
+#if defined(Q_OS_LINUX)
+    libusb_attach_kernel_driver(usb, 0);
+#endif
 
     libusb_close(usb);
     libusb_exit(NULL);
