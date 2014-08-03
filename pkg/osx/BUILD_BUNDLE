@@ -1,0 +1,1 @@
+Execute macdeployqt v800_downloader.app to bundle in the necessary parts of the Qt framework for a standalone app bundle.

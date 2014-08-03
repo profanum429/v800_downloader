@@ -40,7 +40,21 @@ Output</string>
         <widget class="QPushButton" name="downloadBtn">
          <property name="text">
           <string>Download
-Exercises</string>
+Sessions</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="checkBtn">
+         <property name="text">
+          <string>Check All</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="uncheckBtn">
+         <property name="text">
+          <string>Uncheck All</string>
          </property>
         </widget>
        </item>

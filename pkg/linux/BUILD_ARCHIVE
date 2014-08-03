@@ -1,0 +1,13 @@
+First copy the v800_download binary from the release directory into the directory
+
+Second copy the following libs into the directory
+libQt5Core.so.5
+libQt5DBus.so.5
+libQt5Gui.so.5
+libQt5Widgets.so.5
+libicudata.so.52
+libicui18n.so.52
+libicuuc.so.52
+platforms/libqxcb.so
+
+Next execute tar -cvzf v800_downloader.tar.gz v800_downloader to archive and gzip the v800_downloader directory

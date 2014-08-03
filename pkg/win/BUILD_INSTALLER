@@ -1,0 +1,12 @@
+First copy the v800_downloader.exe to the installer build directory and name it
+V800Downloader.exe
+
+Second execute windeployqt.exe with the argument --dir qtlibs.
+
+Next copy the following DLLs into the qtlibs directory:
+libgcc_s_dw2-1.dll
+libstdc++-6.dll
+libwinpthread-1.dll
+
+Finally execute the V800DownloaderInstall.nsi script to generate the
+V800DownloaderInstall.exe

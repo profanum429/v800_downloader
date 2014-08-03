@@ -15,25 +15,26 @@ public:
 signals:
     void all_sessions(QList<QString> sessions);
     void session_done();
+    void sessions_done();
     void ready();
     void not_ready();
 
 public slots:
     void start();
-    void get_session(QString session, QString save_dir, bool bipolar_output);
+    void get_sessions(QList<QString> sessions, QString save_dir, bool bipolar_output);
 
 private:
-    QList<QByteArray> extract_dir_and_files(QByteArray full);
+    QList<QString> extract_dir_and_files(QByteArray full);
     QByteArray generate_request(QString request);
     QByteArray generate_ack(unsigned char packet_num);
     int is_end(QByteArray packet);
     QByteArray add_to_full(QByteArray packet, QByteArray full, bool initial_packet, bool final_packet);
 
-    QList<QByteArray> get_all_dates();
-    QList<QByteArray> get_all_times(QByteArray date);
-    QList<QByteArray> get_all_files(QByteArray date, QByteArray time);
-    void get_file(QByteArray date, QByteArray time, QByteArray file, int type);
-    void get_session_info(QByteArray date, QByteArray time);
+    QList<QString> get_all_dates();
+    QList<QString> get_all_times(QString date);
+    QList<QString> get_all_files(QString date, QString time);
+    void get_file(QString date, QString time, QString file, int type);
+    void get_session_info(QString date, QString time);
 
     void get_all_sessions();
 

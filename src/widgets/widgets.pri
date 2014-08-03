@@ -1,0 +1,5 @@
+INCLUDEPATH += $$PWD
+VPATH += $$PWD
+
+HEADERS += v800main.h
+SOURCES += v800main.cpp

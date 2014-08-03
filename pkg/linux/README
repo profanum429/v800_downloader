@@ -1,0 +1,9 @@
+This archive should contain all the necessary Qt dependencies, the v800_downloader executable, a script to execute the v800_downloader, a 99-polar.rules, a udev rules file and
+a script to install the rules file.
+
+The first step is to run the install.sh script. It will copy the 99-polar.rules file to /etc/udev/rules.d and run udevadm control --reload-rules. It will run these using
+sudo so it will ask for the root password. If you're not comfortable with using the script you can also copy the 99-polar.rules and reload the rules by hand too. The
+script it just for convience. The purpose of the rules file to set the V800 USB device to allow writing by non root users so you can run the downloader as a user.
+
+Next run the v800_downloader.sh script to run the downloader program. The script will set LD_LIBRARY_PATH to the directory with the included library files. You can also have Qt5
+installed natively. Currently the downloader is built again Qt5.3.1.

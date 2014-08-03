@@ -8,6 +8,8 @@ class V800Main;
 }
 
 class V800usb;
+class QMessageBox;
+class QProgressDialog;
 
 class V800Main : public QWidget
 {
@@ -18,21 +20,32 @@ public:
     ~V800Main();
 
 signals:
-    void get_session(QString session, QString save_dir, bool bipolar_output);
+    void get_sessions(QList<QString> session, QString save_dir, bool bipolar_output);
 
 private slots:
     void handle_ready();
     void handle_not_ready();
     void handle_all_sessions(QList<QString> sessions);
     void handle_session_done();
+    void handle_sessions_done();
     void on_downloadBtn_clicked();
 
+    void on_checkBtn_clicked();
+
+    void on_uncheckBtn_clicked();
+
 private:
+    void disable_all();
+    void enable_all();
+
     Ui::V800Main *ui;
     V800usb *usb;
 
+    QMessageBox *start_in_progress;
+    QProgressDialog *download_progress;
+
     bool v800_ready;
-    int session_cnt;
+    int sessions_cnt;
 };
 
 #endif // V800MAIN_H
