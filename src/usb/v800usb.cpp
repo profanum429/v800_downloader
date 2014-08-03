@@ -5,7 +5,6 @@
 #include <QStringList>
 #include <QDir>
 #include <QStandardPaths>
-#include <QUuid>
 #include <stdio.h>
 
 #include "native_usb.h"

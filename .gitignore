@@ -11,3 +11,13 @@ release/tmp/moc_native_usb.cpp
 release/tmp/moc_v800main.cpp
 release/tmp/moc_v800usb.cpp
 release/tmp/ui_v800main.h
+.qmake.stash
+debug/tmp/moc_native_usb.cpp
+debug/v800_downloader.app/Contents/Info.plist
+debug/v800_downloader.app/Contents/MacOS/v800_downloader
+debug/v800_downloader.app/Contents/PkgInfo
+debug/v800_downloader.app/Contents/Resources/empty.lproj
+release/v800_downloader.app/Contents/Info.plist
+release/v800_downloader.app/Contents/MacOS/v800_downloader
+release/v800_downloader.app/Contents/PkgInfo
+release/v800_downloader.app/Contents/Resources/empty.lproj
