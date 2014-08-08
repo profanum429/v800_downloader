@@ -79,7 +79,7 @@ void V800usb::get_all_sessions()
     emit all_sessions(sessions);
 }
 
-void V800usb::get_sessions(QList<QString> sessions, QString save_dir, bool bipolar_output)
+void V800usb::get_sessions(QList<QString> sessions, QString save_dir, bool raw_output)
 {
     QString session;
     QStringList session_split;
@@ -88,7 +88,7 @@ void V800usb::get_sessions(QList<QString> sessions, QString save_dir, bool bipol
     int session_iter, files_iter;
 
     this->save_dir = save_dir;
-    this->bipolar_output = bipolar_output;
+    this->raw_output = raw_output;
 
     for(session_iter = 0; session_iter < sessions.length(); session_iter++)
     {
@@ -313,7 +313,6 @@ QList<QString> V800usb::get_all_files(QString date, QString time)
 
 void V800usb::get_file(QString date, QString time, QString file, int type)
 {   
-    QFile *out_file;
     QByteArray packet, full;
     int cont = 1, usb_state = 0, packet_num = 0;
     bool initial_packet = true;
@@ -370,50 +369,57 @@ void V800usb::get_file(QString date, QString time, QString file, int type)
             usb_state = 1;
             break;
         case 4:
-            QString session_path = QDir::toNativeSeparators(QString(tr("%1/%2/%3")).arg(save_dir).arg(date).arg(time));
-            QString session_full_name = QDir::toNativeSeparators(QString(tr("%1/%2/%3/%4")).arg(save_dir).arg(date).arg(time).arg(file));
+            QDir bipolar_dir(QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + QString(tr("/Polar/PolarFlowSync/export")));
+            QString tag = QDateTime(QDate::fromString(date, tr("yyyyMMdd")), QTime::fromString(time, tr("HHmmss"))).toString(tr("yyyyMMddhhmmss"));
 
-            QDir session_dir = QDir(session_path);
+            QString bipolar_dest(tr(""));
+            if(QString(file).compare(tr("TSESS.BPB")) == 0)
+                bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-create")).arg(bipolar_dir.absolutePath()).arg(tag));
+            else if(QString(file).compare(tr("PHYSDATA.BPB")) == 0)
+                bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-physical-information")).arg(bipolar_dir.absolutePath()).arg(tag));
+            else if(QString(file).compare(tr("BASE.BPB")) == 0)
+                bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-create")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
+            else if(QString(file).compare(tr("ALAPS.BPB")) == 0)
+                bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-autolaps")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
+            else if(QString(file).compare(tr("LAPS.BPB")) == 0)
+                bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-laps")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
+            else if(QString(file).compare(tr("ROUTE.GZB")) == 0)
+                bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-route")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
+            else if(QString(file).compare(tr("SAMPLES.GZB")) == 0)
+                bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-samples")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
+            else if(QString(file).compare(tr("STATS.BPB")) == 0)
+                bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-statistics")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
+            else if(QString(file).compare(tr("ZONES.BPB")) == 0)
+                bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-zones")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
+            else if(QString(file).compare(tr("RR.GZB")) == 0)
+                bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-rrsamples")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
 
-            if(!session_dir.exists())
-                session_dir.mkpath(tr("."));
+            qDebug("Path: %s", bipolar_dest.toUtf8().constData());
 
-            out_file = new QFile(session_full_name);
-            out_file->open(QIODevice::WriteOnly);
-            out_file->write(full);
-            out_file->close();
-
-            if(bipolar_output)
+            if(bipolar_dest != tr(""))
             {
-                QDir bipolar_dir(QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + QString(tr("/Polar/PolarFlowSync/export")));
-                QString tag = QDateTime(QDate::fromString(date, tr("yyyyMMdd")), QTime::fromString(time, tr("HHmmss"))).toString(tr("yyyyMMddhhmmss"));
+                QFile *bipolar_file;
+                bipolar_file = new QFile(bipolar_dest);
+                bipolar_file->open(QIODevice::WriteOnly);
+                bipolar_file->write(full);
+                bipolar_file->close();
+            }
 
-                QString bipolar_dest(tr(""));
-                if(QString(file).compare(tr("TSESS.BPB")) == 0)
-                    bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-create")).arg(bipolar_dir.absolutePath()).arg(tag));
-                else if(QString(file).compare(tr("PHYSDATA.BPB")) == 0)
-                    bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-physical-information")).arg(bipolar_dir.absolutePath()).arg(tag));
-                else if(QString(file).compare(tr("BASE.BPB")) == 0)
-                    bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-create")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
-                else if(QString(file).compare(tr("ALAPS.BPB")) == 0)
-                    bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-autolaps")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
-                else if(QString(file).compare(tr("LAPS.BPB")) == 0)
-                    bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-laps")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
-                else if(QString(file).compare(tr("ROUTE.GZB")) == 0)
-                    bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-route")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
-                else if(QString(file).compare(tr("SAMPLES.GZB")) == 0)
-                    bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-samples")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
-                else if(QString(file).compare(tr("STATS.BPB")) == 0)
-                    bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-statistics")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
-                else if(QString(file).compare(tr("ZONES.BPB")) == 0)
-                    bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-zones")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
-                else if(QString(file).compare(tr("RR.GZB")) == 0)
-                    bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-rrsamples")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
+            if(raw_output)
+            {
+                QString session_path = QDir::toNativeSeparators(QString(tr("%1/%2/%3")).arg(save_dir).arg(date).arg(time));
+                QString session_full_name = QDir::toNativeSeparators(QString(tr("%1/%2/%3/%4")).arg(save_dir).arg(date).arg(time).arg(file));
 
-                qDebug("Path: %s", bipolar_dest.toUtf8().constData());
+                QDir session_dir = QDir(session_path);
 
-                if(bipolar_dest != tr(""))
-                    QFile::copy(session_full_name, QDir::toNativeSeparators(bipolar_dest));
+                if(!session_dir.exists())
+                    session_dir.mkpath(tr("."));
+
+                QFile *raw_file;
+                raw_file = new QFile(session_full_name);
+                raw_file->open(QIODevice::WriteOnly);
+                raw_file->write(full);
+                raw_file->close();
             }
 
             qDebug("Done getting file from V800");

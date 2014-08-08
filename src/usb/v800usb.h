@@ -21,7 +21,7 @@ signals:
 
 public slots:
     void start();
-    void get_sessions(QList<QString> sessions, QString save_dir, bool bipolar_output);
+    void get_sessions(QList<QString> sessions, QString save_dir, bool raw_output);
 
 private:
     QList<QString> extract_dir_and_files(QByteArray full);
@@ -41,7 +41,7 @@ private:
     native_usb *usb;
 
     QString save_dir;
-    bool bipolar_output;
+    bool raw_output;
 
     enum {
         SESSION_DATA = 0,

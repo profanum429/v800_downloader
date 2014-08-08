@@ -28,10 +28,10 @@
      <item>
       <layout class="QVBoxLayout" name="verticalLayout">
        <item>
-        <widget class="QCheckBox" name="bipolarChk">
+        <widget class="QCheckBox" name="rawChk">
          <property name="text">
           <string>Include
-Bipolar 
+Raw
 Output</string>
          </property>
         </widget>

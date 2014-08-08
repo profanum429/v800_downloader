@@ -102,16 +102,20 @@ void V800Main::handle_sessions_done()
 void V800Main::on_downloadBtn_clicked()
 {
     QList<QString> sessions;
+    QString save_dir;
     int item_iter;
 
     disable_all();
     sessions_cnt = 0;
 
-    QString save_dir = QFileDialog::getExistingDirectory(this, tr("Open Directory"), QDir::homePath(), QFileDialog::ShowDirsOnly);
-    if(save_dir == tr(""))
+    if(ui->rawChk->isChecked())
     {
-        enable_all();
-        return;
+        save_dir = QFileDialog::getExistingDirectory(this, tr("Open Directory"), QDir::homePath(), QFileDialog::ShowDirsOnly);
+        if(save_dir == tr(""))
+        {
+            enable_all();
+            return;
+        }
     }
 
     for(item_iter = 0; item_iter < ui->exerciseTree->topLevelItemCount(); item_iter++)
@@ -128,7 +132,7 @@ void V800Main::on_downloadBtn_clicked()
     download_progress->setWindowModality(Qt::WindowModal);
     download_progress->setValue(1);
 
-    emit get_sessions(sessions, save_dir, ui->bipolarChk->isChecked());
+    emit get_sessions(sessions, save_dir, ui->rawChk->isChecked());
 }
 
 void V800Main::on_checkBtn_clicked()
@@ -151,7 +155,7 @@ void V800Main::enable_all()
 {
     ui->exerciseTree->setEnabled(true);
     ui->downloadBtn->setEnabled(true);
-    ui->bipolarChk->setEnabled(true);
+    ui->rawChk->setEnabled(true);
     ui->checkBtn->setEnabled(true);
     ui->uncheckBtn->setEnabled(true);
 }
@@ -160,7 +164,7 @@ void V800Main::disable_all()
 {
     ui->exerciseTree->setEnabled(false);
     ui->downloadBtn->setEnabled(false);
-    ui->bipolarChk->setEnabled(false);
+    ui->rawChk->setEnabled(false);
     ui->checkBtn->setEnabled(false);
     ui->uncheckBtn->setEnabled(false);
 }
