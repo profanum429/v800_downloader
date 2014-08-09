@@ -73,11 +73,20 @@ void V800usb::get_sessions(QList<QString> sessions, QString save_dir, bool raw_o
     emit sessions_done();
 }
 
-void V800usb::get_debug_path(QString path)
+void V800usb::get_all_objects(QString path)
 {
-    get_v800_data(path, true);
+    QList<QString> objects;
 
-    emit sessions_done();
+    objects = get_v800_data(path);
+    emit all_objects(objects);
+}
+
+void V800usb::get_file(QString path, QString save_dir)
+{
+    this->save_dir = save_dir;
+
+    get_v800_data(path, true);
+    emit file_done();
 }
 
 void V800usb::get_all_sessions()
@@ -265,33 +274,12 @@ QList<QString> V800usb::get_v800_data(QString request, bool debug)
             {
                 if(request.contains(tr(".")))
                 {
-                     request.replace(tr("/"), tr("_"));
-
-                     QFile *debug_file;
-                     debug_file = new QFile(request);
-                     debug_file->open(QIODevice::WriteOnly);
-                     debug_file->write(full);
-                     debug_file->close();
-                }
-                else
-                {
                     request.replace(tr("/"), tr("_"));
 
                     QFile *debug_file;
-                    debug_file = new QFile(QString(tr("%1.txt")).arg(request));
+                    debug_file = new QFile(QString(tr("%1/%2")).arg(save_dir).arg(request));
                     debug_file->open(QIODevice::WriteOnly);
-
-                    data = extract_dir_and_files(full, debug);
-
-                    for(int data_iter = 0; data_iter < data.length(); data_iter++)
-                    {
-                        QByteArray object(data[data_iter].toUtf8().constData(), data[data_iter].length());
-                        QString object_name = data[data_iter].right(data[data_iter].length()-1);
-
-                        QString out_line(tr("Object %1:\n\tType: %2\n\tString: %3\n").arg(data_iter).arg((unsigned char)object.at(0), 2, 16).arg(object_name));
-                        debug_file->write(QByteArray(out_line.toUtf8().constData(), out_line.length()));
-                    }
-
+                    debug_file->write(full);
                     debug_file->close();
                 }
             }

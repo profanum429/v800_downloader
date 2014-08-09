@@ -1,6 +1,7 @@
 #include "v800main.h"
 #include "ui_v800main.h"
 #include "v800usb.h"
+#include "v800fs.h"
 
 #include <QtWidgets>
 
@@ -23,7 +24,6 @@ V800Main::V800Main(QWidget *parent) :
     connect(usb, SIGNAL(not_ready()), this, SLOT(handle_not_ready()));
 
     connect(this, SIGNAL(get_sessions(QList<QString>, QString, bool)), usb, SLOT(get_sessions(QList<QString>, QString, bool)));
-    connect(this, SIGNAL(get_debug_path(QString)), usb, SLOT(get_debug_path(QString)));
 
     connect(usb_thread, SIGNAL(started()), usb, SLOT(start()));
     usb_thread->start();
@@ -33,7 +33,6 @@ V800Main::V800Main(QWidget *parent) :
     ui->exerciseTree->setHeaderLabel(tr("Session"));
 
     disable_all();
-
     this->show();
 
     start_in_progress = new QMessageBox(this);
@@ -71,10 +70,10 @@ void V800Main::handle_ready()
 void V800Main::handle_all_sessions(QList<QString> sessions)
 {
     QList<QTreeWidgetItem *> items;
-    int sessions_iter = 0;
-    for(sessions_iter = 0; sessions_iter < sessions.length(); sessions_iter++)
+
+    for(int sessions_iter = 0; sessions_iter < sessions.length(); sessions_iter++)
     {
-        QTreeWidgetItem *item = new QTreeWidgetItem((QTreeWidget *)0, QStringList(QString(sessions[sessions_iter])));
+        QTreeWidgetItem *item = new QTreeWidgetItem((QTreeWidget *)0, QStringList(sessions[sessions_iter]));
         item->setCheckState(0, Qt::Unchecked);
         items.append(item);
     }
@@ -104,7 +103,7 @@ void V800Main::enable_all()
     ui->rawChk->setEnabled(true);
     ui->checkBtn->setEnabled(true);
     ui->uncheckBtn->setEnabled(true);
-    ui->debugGetBtn->setEnabled(true);
+    ui->fsBtn->setEnabled(true);
 }
 
 void V800Main::disable_all()
@@ -114,7 +113,7 @@ void V800Main::disable_all()
     ui->rawChk->setEnabled(false);
     ui->checkBtn->setEnabled(false);
     ui->uncheckBtn->setEnabled(false);
-    ui->debugGetBtn->setEnabled(false);
+    ui->fsBtn->setEnabled(false);
 }
 
 void V800Main::on_downloadBtn_clicked()
@@ -169,25 +168,8 @@ void V800Main::on_uncheckBtn_clicked()
         ui->exerciseTree->topLevelItem(item_iter)->setCheckState(0, Qt::Unchecked);
 }
 
-void V800Main::on_debugGetBtn_clicked()
+void V800Main::on_fsBtn_clicked()
 {
-    bool ok;
-
-    disable_all();
-
-    QString ls_dir = QInputDialog::getText(this, tr("Get Directory/File"), tr("Path"), QLineEdit::Normal, tr(""), &ok);
-
-    if(ok)
-    {
-        download_progress = new QProgressDialog(tr("Downloading %1").arg(ls_dir), tr("Cancel"), 0, 2, this);
-        download_progress->setCancelButton(0);
-        download_progress->setWindowModality(Qt::WindowModal);
-        download_progress->setValue(1);
-
-        emit get_debug_path(ls_dir);
-    }
-    else
-    {
-        enable_all();
-    }
+    V800fs *fs = new V800fs(usb);
+    fs->show();
 }

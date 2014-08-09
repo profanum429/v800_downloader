@@ -21,10 +21,15 @@ signals:
     void ready();
     void not_ready();
 
+    void all_objects(QList<QString> objects);
+    void file_done();
+
 public slots:
     void start();
     void get_sessions(QList<QString> sessions, QString save_dir, bool raw_output);
-    void get_debug_path(QString path);
+
+    void get_all_objects(QString path);
+    void get_file(QString path, QString save_dir);
 
 private:
     QList<QString> extract_dir_and_files(QByteArray full, bool debug=false);

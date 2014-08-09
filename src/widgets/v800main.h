@@ -21,7 +21,6 @@ public:
 
 signals:
     void get_sessions(QList<QString> session, QString save_dir, bool bipolar_output);
-    void get_debug_path(QString path);
 
 private slots:
     void handle_ready();
@@ -29,11 +28,11 @@ private slots:
     void handle_all_sessions(QList<QString> sessions);
     void handle_session_done();
     void handle_sessions_done();
-    void on_downloadBtn_clicked();
 
+    void on_downloadBtn_clicked();
     void on_checkBtn_clicked();
     void on_uncheckBtn_clicked();
-    void on_debugGetBtn_clicked();
+    void on_fsBtn_clicked();
 
 private:
     void disable_all();

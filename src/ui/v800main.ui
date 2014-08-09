@@ -59,13 +59,12 @@ Sessions</string>
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="debugGetBtn">
+        <widget class="QPushButton" name="fsBtn">
          <property name="cursor">
           <cursorShape>ArrowCursor</cursorShape>
          </property>
          <property name="text">
-          <string>Get Directory
-or File</string>
+          <string>Browse V800...</string>
          </property>
         </widget>
        </item>
