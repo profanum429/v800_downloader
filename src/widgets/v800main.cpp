@@ -2,11 +2,7 @@
 #include "ui_v800main.h"
 #include "v800usb.h"
 
-#include <QThread>
-#include <QMessageBox>
-#include <QFileDialog>
-#include <QProgressDialog>
-#include <QStandardPaths>
+#include <QtWidgets>
 
 V800Main::V800Main(QWidget *parent) :
     QWidget(parent),
@@ -25,7 +21,9 @@ V800Main::V800Main(QWidget *parent) :
     connect(usb, SIGNAL(session_done()), this, SLOT(handle_session_done()));
     connect(usb, SIGNAL(ready()), this, SLOT(handle_ready()));
     connect(usb, SIGNAL(not_ready()), this, SLOT(handle_not_ready()));
+
     connect(this, SIGNAL(get_sessions(QList<QString>, QString, bool)), usb, SLOT(get_sessions(QList<QString>, QString, bool)));
+    connect(this, SIGNAL(get_debug_path(QString)), usb, SLOT(get_debug_path(QString)));
 
     connect(usb_thread, SIGNAL(started()), usb, SLOT(start()));
     usb_thread->start();
@@ -99,6 +97,26 @@ void V800Main::handle_sessions_done()
     enable_all();
 }
 
+void V800Main::enable_all()
+{
+    ui->exerciseTree->setEnabled(true);
+    ui->downloadBtn->setEnabled(true);
+    ui->rawChk->setEnabled(true);
+    ui->checkBtn->setEnabled(true);
+    ui->uncheckBtn->setEnabled(true);
+    ui->debugGetBtn->setEnabled(true);
+}
+
+void V800Main::disable_all()
+{
+    ui->exerciseTree->setEnabled(false);
+    ui->downloadBtn->setEnabled(false);
+    ui->rawChk->setEnabled(false);
+    ui->checkBtn->setEnabled(false);
+    ui->uncheckBtn->setEnabled(false);
+    ui->debugGetBtn->setEnabled(false);
+}
+
 void V800Main::on_downloadBtn_clicked()
 {
     QList<QString> sessions;
@@ -151,20 +169,25 @@ void V800Main::on_uncheckBtn_clicked()
         ui->exerciseTree->topLevelItem(item_iter)->setCheckState(0, Qt::Unchecked);
 }
 
-void V800Main::enable_all()
+void V800Main::on_debugGetBtn_clicked()
 {
-    ui->exerciseTree->setEnabled(true);
-    ui->downloadBtn->setEnabled(true);
-    ui->rawChk->setEnabled(true);
-    ui->checkBtn->setEnabled(true);
-    ui->uncheckBtn->setEnabled(true);
-}
+    bool ok;
 
-void V800Main::disable_all()
-{
-    ui->exerciseTree->setEnabled(false);
-    ui->downloadBtn->setEnabled(false);
-    ui->rawChk->setEnabled(false);
-    ui->checkBtn->setEnabled(false);
-    ui->uncheckBtn->setEnabled(false);
+    disable_all();
+
+    QString ls_dir = QInputDialog::getText(this, tr("Get Directory/File"), tr("Path"), QLineEdit::Normal, tr(""), &ok);
+
+    if(ok)
+    {
+        download_progress = new QProgressDialog(tr("Downloading %1").arg(ls_dir), tr("Cancel"), 0, 2, this);
+        download_progress->setCancelButton(0);
+        download_progress->setWindowModality(Qt::WindowModal);
+        download_progress->setValue(1);
+
+        emit get_debug_path(ls_dir);
+    }
+    else
+    {
+        enable_all();
+    }
 }

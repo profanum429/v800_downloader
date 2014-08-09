@@ -38,21 +38,65 @@ void V800usb::start()
     }
 }
 
+void V800usb::get_sessions(QList<QString> sessions, QString save_dir, bool raw_output)
+{
+    QString session;
+    QStringList session_split;
+    QList<QString> files;
+    QDateTime session_time;
+    int session_iter, files_iter;
+
+    this->save_dir = save_dir;
+    this->raw_output = raw_output;
+
+    for(session_iter = 0; session_iter < sessions.length(); session_iter++)
+    {
+        session_time = QDateTime::fromString(sessions.at(session_iter), Qt::TextDate);
+        session = session_time.toString(tr("yyyyMMdd/HHmmss"));
+        session_split = session.split(tr("/"));
+
+        if(session_split.length() == 2)
+        {
+            files.clear();
+            files = get_v800_data(QString(tr("%1/%2/E/%3/00/")).arg(tr(V800_ROOT_DIR)).arg(session_split[0]).arg(session_split[1]));
+
+            for(files_iter = 0; files_iter < files.length(); files_iter++)
+                get_v800_data(QString(tr("%1/%2/E/%3/00/%4")).arg(tr(V800_ROOT_DIR)).arg(session_split[0]).arg(session_split[1]).arg(files[files_iter]));
+
+            get_v800_data(QString(tr("%1/%2/E/%3/TSESS.BPB")).arg(tr(V800_ROOT_DIR)).arg(session_split[0]).arg(session_split[1]));
+            get_v800_data(QString(tr("%1/%2/E/%3/PHYSDATA.BPB")).arg(tr(V800_ROOT_DIR)).arg(session_split[0]).arg(session_split[1]));
+
+            emit session_done();
+        }
+    }
+
+    emit sessions_done();
+}
+
+void V800usb::get_debug_path(QString path)
+{
+    get_v800_data(path, true);
+
+    emit sessions_done();
+}
+
 void V800usb::get_all_sessions()
 {
     QList<QString> dates, times, files, sessions;
     int dates_iter, times_iter, files_iter;
     bool session_exists = false;
 
-    dates = get_all_dates();
+    dates = get_v800_data(QString(tr("%1/")).arg(tr(V800_ROOT_DIR)));
     for(dates_iter = 0; dates_iter < dates.length(); dates_iter++)
     {
         times.clear();
-        times = get_all_times(dates[dates_iter]);
+        times = get_v800_data(QString(tr("%1/%2E/")).arg(tr(V800_ROOT_DIR)).arg(dates[dates_iter]));
+
         for(times_iter = 0; times_iter < times.length(); times_iter++)
         {
             files.clear();
-            files = get_all_files(dates[dates_iter], times[times_iter]);
+            files = get_v800_data(QString(tr("%1/%2/E/%3/00/")).arg(tr(V800_ROOT_DIR)).arg(dates[dates_iter]).arg(times[times_iter]));
+
             for(files_iter = 0; files_iter < files.length(); files_iter++)
             {
                 if(QString(files[files_iter]).compare(tr("ROUTE.GZB")) == 0)
@@ -79,46 +123,9 @@ void V800usb::get_all_sessions()
     emit all_sessions(sessions);
 }
 
-void V800usb::get_sessions(QList<QString> sessions, QString save_dir, bool raw_output)
+QList<QString> V800usb::get_v800_data(QString request, bool debug)
 {
-    QString session;
-    QStringList session_split;
-    QList<QString> files;
-    QDateTime session_time;
-    int session_iter, files_iter;
-
-    this->save_dir = save_dir;
-    this->raw_output = raw_output;
-
-    for(session_iter = 0; session_iter < sessions.length(); session_iter++)
-    {
-        session_time = QDateTime::fromString(sessions.at(session_iter), Qt::TextDate);
-        session = session_time.toString(tr("yyyyMMdd/HHmmss"));
-        session_split = session.split(tr("/"));
-
-        if(session_split.length() == 2)
-        {
-            files = get_all_files(session_split[0], session_split[1]);
-            for(files_iter = 0; files_iter < files.length(); files_iter++)
-                get_file(session_split[0], session_split[1], files[files_iter], SESSION_DATA);
-            get_session_info(session_split[0], session_split[1]);
-
-            emit session_done();
-        }
-    }
-
-    emit sessions_done();
-}
-
-void V800usb::get_session_info(QString date, QString time)
-{
-    get_file(date, time, tr("TSESS.BPB"), SESSION_INFO);
-    get_file(date, time, tr("PHYSDATA.BPB"), SESSION_INFO);
-}
-
-QList<QString> V800usb::get_all_dates()
-{
-    QList<QString> dates;
+    QList<QString> data;
     QByteArray packet, full;
     int cont = 1, usb_state = 0, packet_num = 0, initial_packet = 1;
 
@@ -129,7 +136,7 @@ QList<QString> V800usb::get_all_dates()
         {
         case 0: // send a command to the watch
             packet.clear();
-            packet = generate_request(tr("/U/0/"));
+            packet = generate_request(request);
 
             usb->write_usb(packet);
 
@@ -169,271 +176,138 @@ QList<QString> V800usb::get_all_dates()
             usb_state = 1;
             break;
         case 4:
-            qDebug("Done getting dates from V800");
+            if(!debug)
+            {
+                if(!request.contains(tr(".")))
+                {
+                    data = extract_dir_and_files(full, debug);
 
-            dates = extract_dir_and_files(full);
+                    qDebug("Directory request finished!");
+                }
+                else if(request.contains(tr("/E/")))
+                {
+                    QDir bipolar_dir(QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + QString(tr("/Polar/PolarFlowSync/export")));
+                    QStringList session_split = request.split(tr("/"));
+                    QString date, time, file;
+
+                    if(session_split.length() < 7)
+                    {
+                        qDebug("Malformed request!\n");
+
+                        cont = 0;
+                        break;
+                    }
+                    else
+                    {
+                        date = session_split[3];
+                        time = session_split[5];
+                        file = session_split.last();
+                    }
+
+                    QString tag = QDateTime(QDate::fromString(date, tr("yyyyMMdd")), QTime::fromString(time, tr("HHmmss"))).toString(tr("yyyyMMddhhmmss"));
+
+                    QString bipolar_dest(tr(""));
+                    if(QString(file).compare(tr("TSESS.BPB")) == 0)
+                        bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-create")).arg(bipolar_dir.absolutePath()).arg(tag));
+                    else if(QString(file).compare(tr("PHYSDATA.BPB")) == 0)
+                        bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-physical-information")).arg(bipolar_dir.absolutePath()).arg(tag));
+                    else if(QString(file).compare(tr("BASE.BPB")) == 0)
+                        bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-create")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
+                    else if(QString(file).compare(tr("ALAPS.BPB")) == 0)
+                        bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-autolaps")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
+                    else if(QString(file).compare(tr("LAPS.BPB")) == 0)
+                        bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-laps")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
+                    else if(QString(file).compare(tr("ROUTE.GZB")) == 0)
+                        bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-route")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
+                    else if(QString(file).compare(tr("SAMPLES.GZB")) == 0)
+                        bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-samples")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
+                    else if(QString(file).compare(tr("STATS.BPB")) == 0)
+                        bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-statistics")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
+                    else if(QString(file).compare(tr("ZONES.BPB")) == 0)
+                        bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-zones")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
+                    else if(QString(file).compare(tr("RR.GZB")) == 0)
+                        bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-rrsamples")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
+
+                    if(bipolar_dest != tr(""))
+                    {
+                        qDebug("Path: %s", bipolar_dest.toUtf8().constData());
+
+                        QFile *bipolar_file;
+                        bipolar_file = new QFile(bipolar_dest);
+                        bipolar_file->open(QIODevice::WriteOnly);
+                        bipolar_file->write(full);
+                        bipolar_file->close();
+                    }
+
+                    if(raw_output)
+                    {
+                        QString session_path = QDir::toNativeSeparators(QString(tr("%1/%2/%3")).arg(save_dir).arg(date).arg(time));
+                        QString session_full_name = QDir::toNativeSeparators(QString(tr("%1/%2/%3/%4")).arg(save_dir).arg(date).arg(time).arg(file));
+
+                        QDir session_dir = QDir(session_path);
+
+                        if(!session_dir.exists())
+                            session_dir.mkpath(tr("."));
+
+                        QFile *raw_file;
+                        raw_file = new QFile(session_full_name);
+                        raw_file->open(QIODevice::WriteOnly);
+                        raw_file->write(full);
+                        raw_file->close();
+                    }
+                }
+                else
+                {
+                    qDebug("Unknown file type!");
+                }
+            }
+            else
+            {
+                if(request.contains(tr(".")))
+                {
+                     request.replace(tr("/"), tr("_"));
+
+                     QFile *debug_file;
+                     debug_file = new QFile(request);
+                     debug_file->open(QIODevice::WriteOnly);
+                     debug_file->write(full);
+                     debug_file->close();
+                }
+                else
+                {
+                    request.replace(tr("/"), tr("_"));
+
+                    QFile *debug_file;
+                    debug_file = new QFile(QString(tr("%1.txt")).arg(request));
+                    debug_file->open(QIODevice::WriteOnly);
+
+                    data = extract_dir_and_files(full, debug);
+
+                    for(int data_iter = 0; data_iter < data.length(); data_iter++)
+                    {
+                        QByteArray object(data[data_iter].toUtf8().constData(), data[data_iter].length());
+                        QString object_name = data[data_iter].right(data[data_iter].length()-1);
+
+                        QString out_line(tr("Object %1:\n\tType: %2\n\tString: %3\n").arg(data_iter).arg((unsigned char)object.at(0), 2, 16).arg(object_name));
+                        debug_file->write(QByteArray(out_line.toUtf8().constData(), out_line.length()));
+                    }
+
+                    debug_file->close();
+                }
+            }
 
             cont = 0;
             break;
         }
     }
 
-    return dates;
+    return data;
 }
 
-QList<QString> V800usb::get_all_times(QString date)
-{
-    QList<QString> times;
-    QByteArray packet, full;
-    int cont = 1, usb_state = 0, packet_num = 0, initial_packet = 1;
-
-    while(cont)
-    {
-        // usb state machine for reading
-        switch(usb_state)
-        {
-        case 0: // send a command to the watch
-            packet.clear();
-            packet = generate_request(QString(tr("/U/0/%1/E/")).arg(date));
-
-            usb->write_usb(packet);
-
-            packet_num = 0;
-            usb_state = 1;
-            break;
-        case 1: // we want to read the buffer now
-            packet.clear();
-            packet = usb->read_usb();
-
-            // check for end of buffer
-            if(is_end(packet))
-            {
-                full = add_to_full(packet, full, initial_packet, true);
-                usb_state = 4;
-            }
-            else
-            {
-                full = add_to_full(packet, full, initial_packet, false);
-                usb_state = 2;
-            }
-
-            // initial packet seems to always have two extra bytes in the front, 0x00 0x00
-            if(initial_packet)
-                initial_packet = false;
-            break;
-        case 2: // send an ack packet
-            packet.clear();
-            packet = generate_ack(packet_num);
-            if(packet_num == 0xff)
-                packet_num = 0x00;
-            else
-                packet_num++;
-
-            usb->write_usb(packet);
-
-            usb_state = 1;
-            break;
-        case 4:
-            qDebug("Done getting times from V800");
-
-            times = extract_dir_and_files(full);
-
-            cont = 0;
-            break;
-        }
-    }
-
-    return times;
-}
-
-QList<QString> V800usb::get_all_files(QString date, QString time)
-{
-    QList<QString> files;
-    QByteArray packet, full;
-    int cont = 1, usb_state = 0, packet_num = 0, initial_packet = 1;
-
-    while(cont)
-    {
-        // usb state machine for reading
-        switch(usb_state)
-        {
-        case 0: // send a command to the watch
-            packet.clear();
-            packet = generate_request(QString(tr("/U/0/%1/E/%2/00/")).arg(date).arg(time));
-
-            usb->write_usb(packet);
-
-            packet_num = 0;
-            usb_state = 1;
-            break;
-        case 1: // we want to read the buffer now
-            packet.clear();
-            packet = usb->read_usb();
-
-            // check for end of buffer
-            if(is_end(packet))
-            {
-                full = add_to_full(packet, full, initial_packet, true);
-                usb_state = 4;
-            }
-            else
-            {
-                full = add_to_full(packet, full, initial_packet, false);
-                usb_state = 2;
-            }
-
-            // initial packet seems to always have two extra bytes in the front, 0x00 0x00
-            if(initial_packet)
-                initial_packet = false;
-            break;
-        case 2: // send an ack packet
-            packet.clear();
-            packet = generate_ack(packet_num);
-            if(packet_num == 0xff)
-                packet_num = 0x00;
-            else
-                packet_num++;
-
-            usb->write_usb(packet);
-
-            usb_state = 1;
-            break;
-        case 4:
-            qDebug("Done getting files from V800");
-
-            files = extract_dir_and_files(full);
-
-            cont = 0;
-            break;
-        }
-    }
-
-    return files;
-}
-
-void V800usb::get_file(QString date, QString time, QString file, int type)
-{   
-    QByteArray packet, full;
-    int cont = 1, usb_state = 0, packet_num = 0;
-    bool initial_packet = true;
-
-    //qDebug("Date: %s\nTime: %s\nFile: %s", date.toUtf8(), time.toUtf8(), file.toUtf8());
-
-    while(cont)
-    {
-        // usb state machine for reading
-        switch(usb_state)
-        {
-        case 0: // send a command to the watch
-            packet.clear();
-            if(type == SESSION_DATA)
-                packet = generate_request(QString(tr("/U/0/%1/E/%2/00/%3")).arg(date).arg(time).arg(file));
-            else if(type == SESSION_INFO)
-                packet = generate_request(QString(tr("/U/0/%1/E/%2/%3")).arg(date).arg(time).arg(file));
-
-            usb->write_usb(packet);
-
-            packet_num = 0;
-            usb_state = 1;
-            break;
-        case 1: // we want to read the buffer now
-            packet.clear();
-            packet = usb->read_usb();
-
-            // check for end of buffer
-            if(is_end(packet))
-            {
-                full = add_to_full(packet, full, initial_packet, true);
-                usb_state = 4;
-            }
-            else
-            {
-                full = add_to_full(packet, full, initial_packet, false);
-                usb_state = 2;
-            }
-
-            // initial packet seems to always have two extra bytes in the front, 0x00 0x00
-            if(initial_packet)
-                initial_packet = false;
-            break;
-        case 2: // send an ack packet
-            packet.clear();
-            packet = generate_ack(packet_num);
-            if(packet_num == 0xff)
-                packet_num = 0x00;
-            else
-                packet_num++;
-
-            usb->write_usb(packet);
-
-            usb_state = 1;
-            break;
-        case 4:
-            QDir bipolar_dir(QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + QString(tr("/Polar/PolarFlowSync/export")));
-            QString tag = QDateTime(QDate::fromString(date, tr("yyyyMMdd")), QTime::fromString(time, tr("HHmmss"))).toString(tr("yyyyMMddhhmmss"));
-
-            QString bipolar_dest(tr(""));
-            if(QString(file).compare(tr("TSESS.BPB")) == 0)
-                bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-create")).arg(bipolar_dir.absolutePath()).arg(tag));
-            else if(QString(file).compare(tr("PHYSDATA.BPB")) == 0)
-                bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-physical-information")).arg(bipolar_dir.absolutePath()).arg(tag));
-            else if(QString(file).compare(tr("BASE.BPB")) == 0)
-                bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-create")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
-            else if(QString(file).compare(tr("ALAPS.BPB")) == 0)
-                bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-autolaps")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
-            else if(QString(file).compare(tr("LAPS.BPB")) == 0)
-                bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-laps")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
-            else if(QString(file).compare(tr("ROUTE.GZB")) == 0)
-                bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-route")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
-            else if(QString(file).compare(tr("SAMPLES.GZB")) == 0)
-                bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-samples")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
-            else if(QString(file).compare(tr("STATS.BPB")) == 0)
-                bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-statistics")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
-            else if(QString(file).compare(tr("ZONES.BPB")) == 0)
-                bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-zones")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
-            else if(QString(file).compare(tr("RR.GZB")) == 0)
-                bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-rrsamples")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
-
-            qDebug("Path: %s", bipolar_dest.toUtf8().constData());
-
-            if(bipolar_dest != tr(""))
-            {
-                QFile *bipolar_file;
-                bipolar_file = new QFile(bipolar_dest);
-                bipolar_file->open(QIODevice::WriteOnly);
-                bipolar_file->write(full);
-                bipolar_file->close();
-            }
-
-            if(raw_output)
-            {
-                QString session_path = QDir::toNativeSeparators(QString(tr("%1/%2/%3")).arg(save_dir).arg(date).arg(time));
-                QString session_full_name = QDir::toNativeSeparators(QString(tr("%1/%2/%3/%4")).arg(save_dir).arg(date).arg(time).arg(file));
-
-                QDir session_dir = QDir(session_path);
-
-                if(!session_dir.exists())
-                    session_dir.mkpath(tr("."));
-
-                QFile *raw_file;
-                raw_file = new QFile(session_full_name);
-                raw_file->open(QIODevice::WriteOnly);
-                raw_file->write(full);
-                raw_file->close();
-            }
-
-            qDebug("Done getting file from V800");
-
-            cont = 0;
-            break;
-        }
-    }
-
-}
-
-QList<QString> V800usb::extract_dir_and_files(QByteArray full)
+QList<QString> V800usb::extract_dir_and_files(QByteArray full, bool debug)
 {
     QList<QString> dir_and_files;
+    char unknown_byte;
     int full_state = 0, size = 0, loc = 0;
 
     while(loc < full.length())
@@ -447,6 +321,7 @@ QList<QString> V800usb::extract_dir_and_files(QByteArray full)
                 full_state = 1;
             }
 
+            unknown_byte = (char)full[loc];
             loc++;
             break;
         case 1: /* is this the second 0x0A? */
@@ -464,7 +339,12 @@ QList<QString> V800usb::extract_dir_and_files(QByteArray full)
             loc++;
             break;
         case 3: /* now get the full string */
-            dir_and_files.append(QString(tr(QByteArray(full.constData()+loc, size))));
+            QString name(tr(QByteArray(full.constData()+loc, size)));
+
+            if(debug)
+                name.prepend(QString(tr("%1")).arg(unknown_byte));
+
+            dir_and_files.append(name);
 
             full_state = 0;
             loc += size;

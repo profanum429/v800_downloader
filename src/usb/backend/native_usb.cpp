@@ -105,25 +105,6 @@ int native_usb::open_usb(int vid, int pid)
 
 int native_usb::write_usb(QByteArray packet)
 {
-#if defined(Q_OS_LINUX) || defined(Q_OS_WIN)
-    QByteArray correct_packet;
-    int actual_length;
-
-    if(usb == NULL)
-        return -1;
-
-    if(packet.length() > 64)
-        return -1;
-
-    correct_packet.resize(64 - packet.length());
-    correct_packet.fill(0x00);
-    correct_packet.prepend(packet);
-
-    libusb_interrupt_transfer(usb, (1 | LIBUSB_ENDPOINT_OUT), (unsigned char *)correct_packet.constData(), correct_packet.length(), &actual_length, 0);
-
-    return actual_length;
-#endif
-#if defined(Q_OS_MAC)
     QByteArray correct_packet;
     int actual_length;
 
@@ -137,42 +118,41 @@ int native_usb::write_usb(QByteArray packet)
     correct_packet.fill(0x00);
     correct_packet.prepend(packet);
 
+#if defined(Q_OS_MAC)
     actual_length = rawhid_send(usb, (void *)correct_packet.constData(), correct_packet.length(), 1000);
+#endif
+#if defined(Q_OS_LINUX) || defined(Q_OS_WIN)
+    libusb_interrupt_transfer(usb, (1 | LIBUSB_ENDPOINT_OUT), (unsigned char *)correct_packet.constData(), correct_packet.length(), &actual_length, 0);
+#endif
 
     return actual_length;
-#endif
 }
 
 QByteArray native_usb::read_usb()
 {
-#if defined(Q_OS_LINUX) || defined(Q_OS_WIN)
     QByteArray packet;
     unsigned char char_packet[64];
     int actual_length;
 
-    if(usb == NULL)
-        return packet;
-
-    memset(char_packet, 0x00, sizeof(char_packet));
-    libusb_interrupt_transfer(usb, (1 | LIBUSB_ENDPOINT_IN), char_packet, sizeof(char_packet), &actual_length, 0);
-    packet.append((char *)char_packet, actual_length);
-
-    return packet;
-#endif
 #if defined(Q_OS_MAC)
-    QByteArray packet;
-    unsigned char char_packet[64];
-    int actual_length;
-
     if(usb == -1)
         return packet;
+#endif
+#if defined(Q_OS_LINUX) || defined(Q_OS_WIN)
+    if(usb == NULL)
+        return packet;
+#endif
 
     memset(char_packet, 0x00, sizeof(char_packet));
+#if defined(Q_OS_MAC)
     actual_length = rawhid_recv(usb, char_packet, sizeof(char_packet), 1000);
+#endif
+#if defined(Q_OS_LINUX) || defined(Q_OS_WIN)
+    libusb_interrupt_transfer(usb, (1 | LIBUSB_ENDPOINT_IN), char_packet, sizeof(char_packet), &actual_length, 0);
+#endif
     packet.append((char *)char_packet, actual_length);
 
     return packet;
-#endif
 }
 
 int native_usb::close_usb()
