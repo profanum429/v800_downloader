@@ -189,7 +189,7 @@ QList<QString> V800usb::get_v800_data(QString request, bool debug)
             {
                 if(!request.contains(tr(".")))
                 {
-                    data = extract_dir_and_files(full, debug);
+                    data = extract_dir_and_files(full);
 
                     qDebug("Directory request finished!");
                 }
@@ -292,10 +292,9 @@ QList<QString> V800usb::get_v800_data(QString request, bool debug)
     return data;
 }
 
-QList<QString> V800usb::extract_dir_and_files(QByteArray full, bool debug)
+QList<QString> V800usb::extract_dir_and_files(QByteArray full)
 {
     QList<QString> dir_and_files;
-    char unknown_byte;
     int full_state = 0, size = 0, loc = 0;
 
     while(loc < full.length())
@@ -309,7 +308,6 @@ QList<QString> V800usb::extract_dir_and_files(QByteArray full, bool debug)
                 full_state = 1;
             }
 
-            unknown_byte = (char)full[loc];
             loc++;
             break;
         case 1: /* is this the second 0x0A? */
@@ -328,9 +326,6 @@ QList<QString> V800usb::extract_dir_and_files(QByteArray full, bool debug)
             break;
         case 3: /* now get the full string */
             QString name(tr(QByteArray(full.constData()+loc, size)));
-
-            if(debug)
-                name.prepend(QString(tr("%1")).arg(unknown_byte));
 
             dir_and_files.append(name);
 

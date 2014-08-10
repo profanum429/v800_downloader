@@ -108,8 +108,14 @@ int native_usb::write_usb(QByteArray packet)
     QByteArray correct_packet;
     int actual_length;
 
+#if defined(Q_OS_MAC)
     if(usb == -1)
         return -1;
+#endif
+#if defined(Q_OS_LINUX) || defined(Q_OS_WIN)
+    if(usb == NULL)
+        return -1;
+#endif
 
     if(packet.length() > 64)
         return -1;

@@ -32,7 +32,7 @@ public slots:
     void get_file(QString path, QString save_dir);
 
 private:
-    QList<QString> extract_dir_and_files(QByteArray full, bool debug=false);
+    QList<QString> extract_dir_and_files(QByteArray full);
     QByteArray generate_request(QString request);
     QByteArray generate_ack(unsigned char packet_num);
     int is_end(QByteArray packet);
