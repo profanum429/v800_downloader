@@ -21,3 +21,7 @@ release/v800_downloader.app/Contents/Info.plist
 release/v800_downloader.app/Contents/MacOS/v800_downloader
 release/v800_downloader.app/Contents/PkgInfo
 release/v800_downloader.app/Contents/Resources/empty.lproj
+debug/tmp/moc_v800fs.cpp
+debug/tmp/ui_v800fs.h
+release/tmp/moc_v800fs.cpp
+release/tmp/ui_v800fs.h
