@@ -7,6 +7,6 @@ macx {
 ICON = src/ui/v800_downloader.icns
 }
 
-win {
+win32 {
 RC_ICONS = src/ui/v800_downloader.ico
 }
