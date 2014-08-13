@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>452</width>
-    <height>386</height>
+    <width>599</width>
+    <height>494</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,6 +16,9 @@
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0">
     <layout class="QHBoxLayout" name="horizontalLayout">
+     <property name="spacing">
+      <number>-1</number>
+     </property>
      <item>
       <widget class="QTreeWidget" name="exerciseTree">
        <column>
@@ -27,15 +30,12 @@
      </item>
      <item>
       <layout class="QVBoxLayout" name="verticalLayout">
-       <item>
-        <widget class="QCheckBox" name="rawChk">
-         <property name="text">
-          <string>Include
-Raw
-Output</string>
-         </property>
-        </widget>
-       </item>
+       <property name="spacing">
+        <number>-1</number>
+       </property>
+       <property name="sizeConstraint">
+        <enum>QLayout::SetDefaultConstraint</enum>
+       </property>
        <item>
         <widget class="QPushButton" name="downloadBtn">
          <property name="text">
@@ -59,12 +59,22 @@ Sessions</string>
         </widget>
        </item>
        <item>
+        <widget class="QCheckBox" name="rawChk">
+         <property name="text">
+          <string>Include
+Raw
+Output</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QPushButton" name="fsBtn">
          <property name="cursor">
           <cursorShape>ArrowCursor</cursorShape>
          </property>
          <property name="text">
-          <string>Browse V800...</string>
+          <string>Browse 
+V800...</string>
          </property>
         </widget>
        </item>

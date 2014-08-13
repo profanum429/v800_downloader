@@ -25,12 +25,19 @@ V800Main::V800Main(QWidget *parent) :
 
     connect(this, SIGNAL(get_sessions(QList<QString>, QString, bool)), usb, SLOT(get_sessions(QList<QString>, QString, bool)));
 
+    new QShortcut(QKeySequence(Qt::SHIFT + Qt::Key_A), this, SLOT(handle_advanced_shortcut()));
+
     connect(usb_thread, SIGNAL(started()), usb, SLOT(start()));
     usb_thread->start();
 
     ui->setupUi(this);
+    ui->verticalLayout->setAlignment(Qt::AlignTop);
+    ui->verticalLayout->setSpacing(20);
     ui->exerciseTree->setColumnCount(1);
     ui->exerciseTree->setHeaderLabel(tr("Session"));
+
+    ui->fsBtn->setVisible(false);
+    ui->rawChk->setVisible(false);
 
     disable_all();
     this->show();
@@ -94,6 +101,21 @@ void V800Main::handle_sessions_done()
     download_progress->done(0);
 
     enable_all();
+}
+
+void V800Main::handle_advanced_shortcut()
+{
+    if(ui->fsBtn->isVisible())
+        ui->fsBtn->setVisible(false);
+    else
+        ui->fsBtn->setVisible(true);
+
+    if(ui->rawChk->isVisible())
+        ui->rawChk->setVisible(false);
+    else
+        ui->rawChk->setVisible(true);
+
+    qDebug("Do advanced stuff");
 }
 
 void V800Main::enable_all()
@@ -171,5 +193,6 @@ void V800Main::on_uncheckBtn_clicked()
 void V800Main::on_fsBtn_clicked()
 {
     V800fs *fs = new V800fs(usb);
+    fs->setWindowModality(Qt::WindowModal);
     fs->show();
 }

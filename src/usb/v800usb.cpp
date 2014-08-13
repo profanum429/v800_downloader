@@ -99,32 +99,35 @@ void V800usb::get_all_sessions()
     for(dates_iter = 0; dates_iter < dates.length(); dates_iter++)
     {
         times.clear();
-        times = get_v800_data(QString(tr("%1/%2E/")).arg(tr(V800_ROOT_DIR)).arg(dates[dates_iter]));
-
-        for(times_iter = 0; times_iter < times.length(); times_iter++)
+        if(dates[dates_iter].contains(tr("/")))
         {
-            files.clear();
-            files = get_v800_data(QString(tr("%1/%2/E/%3/00/")).arg(tr(V800_ROOT_DIR)).arg(dates[dates_iter]).arg(times[times_iter]));
+            times = get_v800_data(QString(tr("%1/%2E/")).arg(tr(V800_ROOT_DIR)).arg(dates[dates_iter]));
 
-            for(files_iter = 0; files_iter < files.length(); files_iter++)
+            for(times_iter = 0; times_iter < times.length(); times_iter++)
             {
-                if(QString(files[files_iter]).compare(tr("ROUTE.GZB")) == 0)
+                files.clear();
+                files = get_v800_data(QString(tr("%1/%2/E/%3/00/")).arg(tr(V800_ROOT_DIR)).arg(dates[dates_iter]).arg(times[times_iter]));
+
+                for(files_iter = 0; files_iter < files.length(); files_iter++)
                 {
-                    session_exists = true;
-                    break;
+                    if(QString(files[files_iter]).compare(tr("ROUTE.GZB")) == 0)
+                    {
+                        session_exists = true;
+                        break;
+                    }
                 }
-            }
 
-            if(session_exists)
-            {
-                QString date(dates[dates_iter]);
-                QString time(times[times_iter]);
+                if(session_exists)
+                {
+                    QString date(dates[dates_iter]);
+                    QString time(times[times_iter]);
 
-                QString combined((QString(tr("%1%2")).arg(date).arg(time)));
-                QDateTime session_time = QDateTime::fromString(combined, tr("yyyyMMdd/HHmmss/"));
+                    QString combined((QString(tr("%1%2")).arg(date).arg(time)));
+                    QDateTime session_time = QDateTime::fromString(combined, tr("yyyyMMdd/HHmmss/"));
 
-                sessions.append(session_time.toString(Qt::TextDate));
-                session_exists = false;
+                    sessions.append(session_time.toString(Qt::TextDate));
+                    session_exists = false;
+                }
             }
         }
     }
@@ -267,7 +270,7 @@ QList<QString> V800usb::get_v800_data(QString request, bool debug)
                 }
                 else
                 {
-                    qDebug("Unknown file type!");
+                    qDebug("Unknown file type! -> %s", request.toUtf8().constData());
                 }
             }
             else

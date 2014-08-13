@@ -28,6 +28,7 @@ private slots:
     void handle_all_sessions(QList<QString> sessions);
     void handle_session_done();
     void handle_sessions_done();
+    void handle_advanced_shortcut();
 
     void on_downloadBtn_clicked();
     void on_checkBtn_clicked();
