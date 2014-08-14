@@ -43,6 +43,7 @@ V800Main::V800Main(QWidget *parent) :
     this->show();
 
     start_in_progress = new QMessageBox(this);
+    start_in_progress->setWindowTitle(tr("V800 Downloader"));
     start_in_progress->setText(tr("Downloading session list from V800..."));
     start_in_progress->setIcon(QMessageBox::Information);
     start_in_progress->setStandardButtons(0);
@@ -59,6 +60,7 @@ V800Main::~V800Main()
 void V800Main::handle_not_ready()
 {
     QMessageBox failure;
+    failure.setWindowTitle(tr("V800 Downloader"));
     failure.setText(tr("Failed to open V800!"));
     failure.setIcon(QMessageBox::Critical);
     failure.exec();
@@ -100,8 +102,10 @@ void V800Main::handle_sessions_done()
 {
     download_progress->done(0);
     QMessageBox done;
+    done.setWindowTitle(tr("V800 Downloader"));
     done.setText(tr("Done downloading sessions! Run Bipolar to convert them to exportable formats."));
     done.setIcon(QMessageBox::Information);
+    done.setWindowModality(Qt::WindowModal);
     done.exec();
 
     enable_all();
@@ -170,6 +174,7 @@ void V800Main::on_downloadBtn_clicked()
     download_progress->setCancelButton(0);
     download_progress->setWindowModality(Qt::WindowModal);
     download_progress->setValue(1);
+    download_progress->setWindowTitle(tr("V800 Downloader"));
     download_progress->show();
 
     emit get_sessions(sessions, save_dir, ui->rawChk->isChecked());

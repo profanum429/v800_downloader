@@ -110,6 +110,7 @@ void V800fs::on_downloadBtn_clicked()
     download_progress->setCancelButton(0);
     download_progress->setWindowModality(Qt::WindowModal);
     download_progress->setValue(1);
+    download_progress->setWindowTitle(tr("V800 Downloader"));
     download_progress->show();
 
     QTreeWidgetItem *parent=NULL;
