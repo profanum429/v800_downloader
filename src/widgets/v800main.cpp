@@ -170,6 +170,7 @@ void V800Main::on_downloadBtn_clicked()
     download_progress->setCancelButton(0);
     download_progress->setWindowModality(Qt::WindowModal);
     download_progress->setValue(1);
+    download_progress->show();
 
     emit get_sessions(sessions, save_dir, ui->rawChk->isChecked());
 }
