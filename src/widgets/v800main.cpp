@@ -99,6 +99,10 @@ void V800Main::handle_session_done()
 void V800Main::handle_sessions_done()
 {
     download_progress->done(0);
+    QMessageBox done;
+    done.setText(tr("Done downloading sessions! Run Bipolar to convert them to exportable formats."));
+    done.setIcon(QMessageBox::Information);
+    done.exec();
 
     enable_all();
 }
@@ -114,13 +118,10 @@ void V800Main::handle_advanced_shortcut()
         ui->rawChk->setVisible(false);
     else
         ui->rawChk->setVisible(true);
-
-    qDebug("Do advanced stuff");
 }
 
 void V800Main::enable_all()
 {
-    ui->exerciseTree->setEnabled(true);
     ui->downloadBtn->setEnabled(true);
     ui->rawChk->setEnabled(true);
     ui->checkBtn->setEnabled(true);
@@ -130,7 +131,6 @@ void V800Main::enable_all()
 
 void V800Main::disable_all()
 {
-    ui->exerciseTree->setEnabled(false);
     ui->downloadBtn->setEnabled(false);
     ui->rawChk->setEnabled(false);
     ui->checkBtn->setEnabled(false);
@@ -166,7 +166,7 @@ void V800Main::on_downloadBtn_clicked()
         }
     }
 
-    download_progress = new QProgressDialog(tr("Downloading 1/%1").arg(sessions_cnt), tr("Cancel"), 0, sessions_cnt+1, this);
+    download_progress = new QProgressDialog(tr("Downloading 1/%1...").arg(sessions_cnt), tr("Cancel"), 0, sessions_cnt+1, this);
     download_progress->setCancelButton(0);
     download_progress->setWindowModality(Qt::WindowModal);
     download_progress->setValue(1);

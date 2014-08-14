@@ -106,7 +106,7 @@ void V800fs::on_downloadBtn_clicked()
         return;
     }
 
-    download_progress = new QProgressDialog(tr("Downloading %1").arg(ui->v800Tree->selectedItems()[0]->text(0)), tr("Cancel"), 0, 2, this);
+    download_progress = new QProgressDialog(tr("Downloading %1...").arg(ui->v800Tree->selectedItems()[0]->text(0)), tr("Cancel"), 0, 2, this);
     download_progress->setCancelButton(0);
     download_progress->setWindowModality(Qt::WindowModal);
     download_progress->setValue(1);
