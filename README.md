@@ -9,6 +9,4 @@ This tool lets you download the older session that still exist (in my case my wa
 
 There is also a few options, the first is to output raw data files. This option will bring up a directory selection box that allows you to save the raw data files wherever you'd like. The raw data files are downloaded and also the correct files are placed in the Bipolar directory. These raw data files retain the same name as on the watch and are everything for a session. These will probably only be of interest to other developers who are looking to play around with the files.
 
-The second and third option are straightforward; buttons to either select all sessions or deselect all sessions.
-
-The final option is a button that will bring up the V800 Filesystem explorer. This allows you to dig into the filesystem on the V800 and see every file and directory. It also gives the option to download files from anywhere on the watch. This again will probably only be of interest to other developers.
+Finally, there is an Advanced Options mode accessed by pressing Shift+A. This will allow you select to download the files off the watch and save them in a directory with their raw names. This will also allow you to open up the V800 Filesystem Browser. Both of these features are not useful to users but might interest developers/curious folks who are interested in seeing how the V800 is layed out software-wise internally.
