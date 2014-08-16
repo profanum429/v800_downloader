@@ -38,7 +38,7 @@ void V800usb::start()
     }
 }
 
-void V800usb::get_sessions(QList<QString> sessions, QString save_dir, bool raw_output)
+void V800usb::get_sessions(QList<QString> sessions, QString default_dir, bool raw_output)
 {
     QString session;
     QStringList session_split;
@@ -46,7 +46,8 @@ void V800usb::get_sessions(QList<QString> sessions, QString save_dir, bool raw_o
     QDateTime session_time;
     int session_iter, files_iter;
 
-    this->save_dir = save_dir;
+    this->default_dir = default_dir;
+    this->raw_dir = default_dir;
     this->raw_output = raw_output;
 
     for(session_iter = 0; session_iter < sessions.length(); session_iter++)
@@ -81,9 +82,9 @@ void V800usb::get_all_objects(QString path)
     emit all_objects(objects);
 }
 
-void V800usb::get_file(QString path, QString save_dir)
+void V800usb::get_file(QString path, QString file_dir)
 {
-    this->save_dir = save_dir;
+    this->file_dir = file_dir;
 
     get_v800_data(path, true);
     emit file_done();
@@ -193,12 +194,10 @@ QList<QString> V800usb::get_v800_data(QString request, bool debug)
                 if(!request.contains(tr(".")))
                 {
                     data = extract_dir_and_files(full);
-
-                    qDebug("Directory request finished!");
                 }
                 else if(request.contains(tr("/E/")))
                 {
-                    QDir bipolar_dir(QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + QString(tr("/Polar/PolarFlowSync/export")));
+                    QDir bipolar_dir(default_dir);
                     QStringList session_split = request.split(tr("/"));
                     QString date, time, file;
 
@@ -242,8 +241,6 @@ QList<QString> V800usb::get_v800_data(QString request, bool debug)
 
                     if(bipolar_dest != tr(""))
                     {
-                        qDebug("Path: %s", bipolar_dest.toUtf8().constData());
-
                         QFile *bipolar_file;
                         bipolar_file = new QFile(bipolar_dest);
                         bipolar_file->open(QIODevice::WriteOnly);
@@ -253,8 +250,8 @@ QList<QString> V800usb::get_v800_data(QString request, bool debug)
 
                     if(raw_output)
                     {
-                        QString session_path = QDir::toNativeSeparators(QString(tr("%1/%2/%3")).arg(save_dir).arg(date).arg(time));
-                        QString session_full_name = QDir::toNativeSeparators(QString(tr("%1/%2/%3/%4")).arg(save_dir).arg(date).arg(time).arg(file));
+                        QString session_path = QDir::toNativeSeparators(QString(tr("%1/%2/%3")).arg(raw_dir).arg(date).arg(time));
+                        QString session_full_name = QDir::toNativeSeparators(QString(tr("%1/%2/%3/%4")).arg(raw_dir).arg(date).arg(time).arg(file));
 
                         QDir session_dir = QDir(session_path);
 
@@ -280,7 +277,7 @@ QList<QString> V800usb::get_v800_data(QString request, bool debug)
                     request.replace(tr("/"), tr("_"));
 
                     QFile *debug_file;
-                    debug_file = new QFile(QString(tr("%1/%2")).arg(save_dir).arg(request));
+                    debug_file = new QFile(QString(tr("%1/%2")).arg(file_dir).arg(request));
                     debug_file->open(QIODevice::WriteOnly);
                     debug_file->write(full);
                     debug_file->close();

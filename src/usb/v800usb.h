@@ -26,10 +26,10 @@ signals:
 
 public slots:
     void start();
-    void get_sessions(QList<QString> sessions, QString save_dir, bool raw_output);
+    void get_sessions(QList<QString> sessions, QString default_dir, bool raw_output);
 
     void get_all_objects(QString path);
-    void get_file(QString path, QString save_dir);
+    void get_file(QString path, QString file_dir);
 
 private:
     QList<QString> extract_dir_and_files(QByteArray full);
@@ -44,7 +44,10 @@ private:
 
     native_usb *usb;
 
-    QString save_dir;
+    QString default_dir;
+    QString raw_dir;
+    QString file_dir;
+
     bool raw_output;
 };
 

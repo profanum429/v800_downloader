@@ -45,6 +45,14 @@ Sessions</string>
         </widget>
        </item>
        <item>
+        <widget class="QPushButton" name="dirSelectBtn">
+         <property name="text">
+          <string>Change Default
+Output Directory</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QPushButton" name="checkBtn">
          <property name="text">
           <string>Check All</string>

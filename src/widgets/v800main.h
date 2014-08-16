@@ -35,6 +35,8 @@ private slots:
     void on_uncheckBtn_clicked();
     void on_fsBtn_clicked();
 
+    void on_dirSelectBtn_clicked();
+
 private:
     void disable_all();
     void enable_all();
@@ -47,6 +49,8 @@ private:
 
     bool v800_ready;
     int sessions_cnt;
+
+    QString default_dir;
 };
 
 #endif // V800MAIN_H

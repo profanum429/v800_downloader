@@ -30,6 +30,19 @@ V800Main::V800Main(QWidget *parent) :
     connect(usb_thread, SIGNAL(started()), usb, SLOT(start()));
     usb_thread->start();
 
+    QCoreApplication::setOrganizationName(tr("profanum429"));
+    QCoreApplication::setOrganizationDomain(tr("profanum429.com"));
+    QCoreApplication::setApplicationName(tr("V800 Downloader"));
+
+    QSettings settings;
+    default_dir = settings.value(tr("default_dir")).toString();
+    if(default_dir.isEmpty())
+    {
+        qDebug("Default dir empty!");
+        default_dir = QString((QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + QString(tr("/Polar/PolarFlowSync/export"))));
+        settings.setValue(tr("default_dir"), default_dir);
+    }
+
     ui->setupUi(this);
     ui->verticalLayout->setAlignment(Qt::AlignTop);
     ui->verticalLayout->setSpacing(20);
@@ -131,6 +144,7 @@ void V800Main::enable_all()
     ui->checkBtn->setEnabled(true);
     ui->uncheckBtn->setEnabled(true);
     ui->fsBtn->setEnabled(true);
+    ui->dirSelectBtn->setEnabled(true);
 }
 
 void V800Main::disable_all()
@@ -140,26 +154,16 @@ void V800Main::disable_all()
     ui->checkBtn->setEnabled(false);
     ui->uncheckBtn->setEnabled(false);
     ui->fsBtn->setEnabled(false);
+    ui->dirSelectBtn->setEnabled(false);
 }
 
 void V800Main::on_downloadBtn_clicked()
 {
     QList<QString> sessions;
-    QString save_dir;
     int item_iter;
 
     disable_all();
     sessions_cnt = 0;
-
-    if(ui->rawChk->isChecked())
-    {
-        save_dir = QFileDialog::getExistingDirectory(this, tr("Open Directory"), QDir::homePath(), QFileDialog::ShowDirsOnly);
-        if(save_dir == tr(""))
-        {
-            enable_all();
-            return;
-        }
-    }
 
     for(item_iter = 0; item_iter < ui->exerciseTree->topLevelItemCount(); item_iter++)
     {
@@ -177,7 +181,7 @@ void V800Main::on_downloadBtn_clicked()
     download_progress->setWindowTitle(tr("V800 Downloader"));
     download_progress->show();
 
-    emit get_sessions(sessions, save_dir, ui->rawChk->isChecked());
+    emit get_sessions(sessions, default_dir, ui->rawChk->isChecked());
 }
 
 void V800Main::on_checkBtn_clicked()
@@ -201,4 +205,16 @@ void V800Main::on_fsBtn_clicked()
     V800fs *fs = new V800fs(usb);
     fs->setWindowModality(Qt::WindowModal);
     fs->show();
+}
+
+void V800Main::on_dirSelectBtn_clicked()
+{
+    QString new_default_dir = QFileDialog::getExistingDirectory(this, tr("Default Save Directory"), default_dir, QFileDialog::ShowDirsOnly);
+    if(!new_default_dir.isEmpty())
+    {
+        default_dir = new_default_dir;
+
+        QSettings settings;
+        settings.setValue(tr("default_dir"), default_dir);
+    }
 }
