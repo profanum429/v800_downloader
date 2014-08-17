@@ -28,3 +28,6 @@ Credits:
 I couldn't of done this program without the <a href="https://www.github.com/pcolby/bipolar">Bipolar</a> project as it does the hard work of
 converting the data into actual files. All of my modifications are available at https://www.github.com/profanum429/v800_downloader, under the
 src/bipolar directory.
+
+License:
+All V800 Downloader files are licensed GPL3. The Bipolar files under src/bipolar are licensed GPL3 per the original source.
