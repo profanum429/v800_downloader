@@ -20,13 +20,14 @@ public:
     ~V800Main();
 
 signals:
-    void get_sessions(QList<QString> session, QString save_dir, bool bipolar_output);
+    void get_sessions(QList<QString> session, QString save_dir, bool raw_output, bool tcx_output, bool hrm_output, bool gpx_output);
 
 private slots:
     void handle_ready();
     void handle_not_ready();
     void handle_all_sessions(QList<QString> sessions);
     void handle_session_done();
+    void handle_session_failed(QString tag, int failure);
     void handle_sessions_done();
     void handle_advanced_shortcut();
 
@@ -51,6 +52,8 @@ private:
     int sessions_cnt;
 
     QString default_dir;
+
+    QList<QString> error_list;
 };
 
 #endif // V800MAIN_H

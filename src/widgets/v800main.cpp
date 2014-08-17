@@ -20,10 +20,11 @@ V800Main::V800Main(QWidget *parent) :
     connect(usb, SIGNAL(all_sessions(QList<QString>)), this, SLOT(handle_all_sessions(QList<QString>)));
     connect(usb, SIGNAL(sessions_done()), this, SLOT(handle_sessions_done()));
     connect(usb, SIGNAL(session_done()), this, SLOT(handle_session_done()));
+    connect(usb, SIGNAL(session_failed(QString, int)), this, SLOT(handle_session_failed(QString, int)));
     connect(usb, SIGNAL(ready()), this, SLOT(handle_ready()));
     connect(usb, SIGNAL(not_ready()), this, SLOT(handle_not_ready()));
 
-    connect(this, SIGNAL(get_sessions(QList<QString>, QString, bool)), usb, SLOT(get_sessions(QList<QString>, QString, bool)));
+    connect(this, SIGNAL(get_sessions(QList<QString>, QString, bool, bool, bool, bool)), usb, SLOT(get_sessions(QList<QString>, QString, bool, bool, bool, bool)));
 
     new QShortcut(QKeySequence(Qt::SHIFT + Qt::Key_A), this, SLOT(handle_advanced_shortcut()));
 
@@ -51,6 +52,8 @@ V800Main::V800Main(QWidget *parent) :
 
     ui->fsBtn->setVisible(false);
     ui->rawChk->setVisible(false);
+
+    ui->tcxBox->setChecked(true);
 
     disable_all();
     this->show();
@@ -111,12 +114,42 @@ void V800Main::handle_session_done()
     download_progress->setLabelText(tr("Downloading %1/%2...").arg(cur_session+1).arg(sessions_cnt));
 }
 
+void V800Main::handle_session_failed(QString tag, int failure)
+{
+    if(failure == V800usb::PARSE_FAILED)
+        error_list.append(QString(tr("Error! %1: Invalid session files!")).arg(tag));
+    else if(failure == V800usb::TCX_FAILED)
+        error_list.append(QString(tr("Error! %1: Failed to write TCX file!")).arg(tag));
+    else if(failure == V800usb::HRM_FAILED)
+        error_list.append(QString(tr("Error! %1: Failed to write HRM file!")).arg(tag));
+    else if(failure == V800usb::GPX_FAILED)
+        error_list.append(QString(tr("Error! %1: Failed to write GPX file!")).arg(tag));
+    /*
+    else if(failure == V800usb::TCX_EXISTS)
+        error_list.append(QString(tr("Warning: TCX for %1 already exists, skipping.")).arg(tag));
+    else if(failure == V800usb::HRM_EXISTS)
+        error_list.append(QString(tr("Warning: HRM for %1 already exists, skipping.")).arg(tag));
+    else if(failure == V800usb::GPX_EXISTS)
+        error_list.append(QString(tr("Warning: GPX for %1 already exists, skipping.")).arg(tag));
+    */
+}
+
 void V800Main::handle_sessions_done()
 {
     download_progress->done(0);
+
+    QString msg_text(QString(tr("Done downloading and converting sessions!\nLook in %1 to find your files!")).arg(default_dir));
+
+    if(error_list.length() > 0)
+    {
+        msg_text.append(QString(tr("\n\nThe following issues occurred during downloading and conversion\n")));
+        for(int error_iter = 0; error_iter < error_list.length(); error_iter++)
+            msg_text.append(QString(tr("\n%1")).arg(error_list[error_iter]));
+    }
+
     QMessageBox done;
     done.setWindowTitle(tr("V800 Downloader"));
-    done.setText(tr("Done downloading sessions! Run Bipolar to convert them to exportable formats."));
+    done.setText(msg_text);
     done.setIcon(QMessageBox::Information);
     done.setWindowModality(Qt::WindowModal);
     done.exec();
@@ -145,6 +178,9 @@ void V800Main::enable_all()
     ui->uncheckBtn->setEnabled(true);
     ui->fsBtn->setEnabled(true);
     ui->dirSelectBtn->setEnabled(true);
+    ui->tcxBox->setEnabled(true);
+    ui->hrmBox->setEnabled(true);
+    ui->gpxBox->setEnabled(true);
 }
 
 void V800Main::disable_all()
@@ -155,6 +191,9 @@ void V800Main::disable_all()
     ui->uncheckBtn->setEnabled(false);
     ui->fsBtn->setEnabled(false);
     ui->dirSelectBtn->setEnabled(false);
+    ui->tcxBox->setEnabled(false);
+    ui->hrmBox->setEnabled(false);
+    ui->gpxBox->setEnabled(false);
 }
 
 void V800Main::on_downloadBtn_clicked()
@@ -174,6 +213,8 @@ void V800Main::on_downloadBtn_clicked()
         }
     }
 
+    error_list.clear();
+
     download_progress = new QProgressDialog(tr("Downloading 1/%1...").arg(sessions_cnt), tr("Cancel"), 0, sessions_cnt+1, this);
     download_progress->setCancelButton(0);
     download_progress->setWindowModality(Qt::WindowModal);
@@ -181,7 +222,7 @@ void V800Main::on_downloadBtn_clicked()
     download_progress->setWindowTitle(tr("V800 Downloader"));
     download_progress->show();
 
-    emit get_sessions(sessions, default_dir, ui->rawChk->isChecked());
+    emit get_sessions(sessions, default_dir, ui->rawChk->isChecked(), ui->tcxBox->isChecked(), ui->hrmBox->isChecked(), ui->gpxBox->isChecked());
 }
 
 void V800Main::on_checkBtn_clicked()

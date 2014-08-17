@@ -8,6 +8,7 @@
 #include <stdio.h>
 
 #include "native_usb.h"
+#include "trainingsession.h"
 
 V800usb::V800usb(QObject *parent) :
     QObject(parent)
@@ -38,13 +39,13 @@ void V800usb::start()
     }
 }
 
-void V800usb::get_sessions(QList<QString> sessions, QString default_dir, bool raw_output)
+void V800usb::get_sessions(QList<QString> sessions, QString default_dir, bool raw_output, bool tcx_output, bool hrm_output, bool gpx_output)
 {
     QString session;
     QStringList session_split;
-    QList<QString> files;
+    QList<QString> files, temp_session_files, temp_files;
     QDateTime session_time;
-    int session_iter, files_iter;
+    int session_iter, files_iter, exist[EXPORT_TYPES];
 
     this->default_dir = default_dir;
     this->raw_dir = default_dir;
@@ -58,14 +59,96 @@ void V800usb::get_sessions(QList<QString> sessions, QString default_dir, bool ra
 
         if(session_split.length() == 2)
         {
+            QString tag = QDateTime(QDate::fromString(session_split[0], tr("yyyyMMdd")), QTime::fromString(session_split[1], tr("HHmmss"))).toString(tr("yyyyMMddhhmmss"));
+            if(tcx_output && QFile::exists(QString(tr("%1/%2.tcx")).arg(default_dir).arg(tag)))
+            {
+                emit session_failed(tag, TCX_EXISTS);
+                exist[TCX] = true;
+            }
+            else
+            {
+                exist[TCX] = false;
+            }
+
+            if(hrm_output && QFile::exists(QString(tr("%1/%2.hrm")).arg(default_dir).arg(tag)))
+            {
+                emit session_failed(tag, HRM_EXISTS);
+                exist[HRM] = true;
+            }
+            else
+            {
+                exist[HRM] = false;
+            }
+
+            if(gpx_output && QFile::exists(QString(tr("%1/%2.gpx")).arg(default_dir).arg(tag)))
+            {
+                emit session_failed(tag, GPX_EXISTS);
+                exist[GPX] = true;
+            }
+            else
+            {
+                exist[GPX] = false;
+            }
+
+            if((tcx_output == exist[TCX]) && (hrm_output == exist[HRM]) && (gpx_output == exist[GPX]))
+            {
+                emit session_done();
+                continue;
+            }
+
             files.clear();
             files = get_v800_data(QString(tr("%1/%2/E/%3/00/")).arg(tr(V800_ROOT_DIR)).arg(session_split[0]).arg(session_split[1]));
 
             for(files_iter = 0; files_iter < files.length(); files_iter++)
-                get_v800_data(QString(tr("%1/%2/E/%3/00/%4")).arg(tr(V800_ROOT_DIR)).arg(session_split[0]).arg(session_split[1]).arg(files[files_iter]));
+            {
+                temp_files = get_v800_data(QString(tr("%1/%2/E/%3/00/%4")).arg(tr(V800_ROOT_DIR)).arg(session_split[0]).arg(session_split[1]).arg(files[files_iter]));
+                if(temp_files.length() == 1)
+                    temp_session_files.append(temp_files[0]);
+            }
 
-            get_v800_data(QString(tr("%1/%2/E/%3/TSESS.BPB")).arg(tr(V800_ROOT_DIR)).arg(session_split[0]).arg(session_split[1]));
-            get_v800_data(QString(tr("%1/%2/E/%3/PHYSDATA.BPB")).arg(tr(V800_ROOT_DIR)).arg(session_split[0]).arg(session_split[1]));
+            temp_files = get_v800_data(QString(tr("%1/%2/E/%3/TSESS.BPB")).arg(tr(V800_ROOT_DIR)).arg(session_split[0]).arg(session_split[1]));
+            if(temp_files.length() == 1)
+                temp_session_files.append(temp_files[0]);
+            temp_files = get_v800_data(QString(tr("%1/%2/E/%3/PHYSDATA.BPB")).arg(tr(V800_ROOT_DIR)).arg(session_split[0]).arg(session_split[1]));
+            if(temp_files.length() == 1)
+                temp_session_files.append(temp_files[0]);
+
+            QString session_path((tr("%1/v2-users-0000000-training-sessions-%2")).arg(default_dir).arg(tag));
+            polar::v2::TrainingSession parser(session_path);
+
+            if(!parser.parse())
+            {
+                emit session_failed(tag, PARSE_FAILED);
+            }
+            else
+            {
+                if(tcx_output && !exist[TCX])
+                {
+                    QString tcx(QString(tr("%1/%2.tcx")).arg(default_dir).arg(tag));
+                    if(!parser.writeTCX(tcx))
+                        emit session_failed(tag, TCX_FAILED);
+                }
+
+                if(hrm_output && !exist[HRM])
+                {
+                    QStringList hrm = parser.writeHRM(QString(tr("%1/%2")).arg(default_dir).arg(tag));
+                    if(hrm.isEmpty())
+                        emit session_failed(tag, HRM_FAILED);
+                }
+
+                if(gpx_output && !exist[GPX])
+                {
+                    QString gpx(QString(tr("%1/%2.gpx")).arg(default_dir).arg(tag));
+                    if(!parser.writeGPX(gpx))
+                        emit session_failed(tag, GPX_FAILED);
+                }
+            }
+
+            for(files_iter = 0; files_iter < temp_session_files.length(); files_iter++)
+            {
+                qDebug("Remove: %s", temp_session_files[files_iter].toUtf8().constData());
+                QFile::remove(temp_session_files[files_iter]);
+            }
 
             emit session_done();
         }
@@ -197,7 +280,6 @@ QList<QString> V800usb::get_v800_data(QString request, bool debug)
                 }
                 else if(request.contains(tr("/E/")))
                 {
-                    QDir bipolar_dir(default_dir);
                     QStringList session_split = request.split(tr("/"));
                     QString date, time, file;
 
@@ -217,35 +299,39 @@ QList<QString> V800usb::get_v800_data(QString request, bool debug)
 
                     QString tag = QDateTime(QDate::fromString(date, tr("yyyyMMdd")), QTime::fromString(time, tr("HHmmss"))).toString(tr("yyyyMMddhhmmss"));
 
-                    QString bipolar_dest(tr(""));
+                    QString bipolar_dest;
                     if(QString(file).compare(tr("TSESS.BPB")) == 0)
-                        bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-create")).arg(bipolar_dir.absolutePath()).arg(tag));
+                        bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-create")).arg(default_dir).arg(tag));
                     else if(QString(file).compare(tr("PHYSDATA.BPB")) == 0)
-                        bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-physical-information")).arg(bipolar_dir.absolutePath()).arg(tag));
+                        bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-physical-information")).arg(default_dir).arg(tag));
                     else if(QString(file).compare(tr("BASE.BPB")) == 0)
-                        bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-create")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
+                        bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-create")).arg(default_dir).arg(tag).arg(tag));
                     else if(QString(file).compare(tr("ALAPS.BPB")) == 0)
-                        bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-autolaps")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
+                        bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-autolaps")).arg(default_dir).arg(tag).arg(tag));
                     else if(QString(file).compare(tr("LAPS.BPB")) == 0)
-                        bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-laps")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
+                        bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-laps")).arg(default_dir).arg(tag).arg(tag));
                     else if(QString(file).compare(tr("ROUTE.GZB")) == 0)
-                        bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-route")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
+                        bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-route")).arg(default_dir).arg(tag).arg(tag));
                     else if(QString(file).compare(tr("SAMPLES.GZB")) == 0)
-                        bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-samples")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
+                        bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-samples")).arg(default_dir).arg(tag).arg(tag));
                     else if(QString(file).compare(tr("STATS.BPB")) == 0)
-                        bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-statistics")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
+                        bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-statistics")).arg(default_dir).arg(tag).arg(tag));
                     else if(QString(file).compare(tr("ZONES.BPB")) == 0)
-                        bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-zones")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
+                        bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-zones")).arg(default_dir).arg(tag).arg(tag));
                     else if(QString(file).compare(tr("RR.GZB")) == 0)
-                        bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-rrsamples")).arg(bipolar_dir.absolutePath()).arg(tag).arg(tag));
+                        bipolar_dest = (QString(tr("%1/v2-users-0000000-training-sessions-%2-exercises-%3-rrsamples")).arg(default_dir).arg(tag).arg(tag));
 
-                    if(bipolar_dest != tr(""))
+                    if(!bipolar_dest.isEmpty())
                     {
+                        qDebug("Path: %s", bipolar_dest.toUtf8().constData());
+
                         QFile *bipolar_file;
                         bipolar_file = new QFile(bipolar_dest);
                         bipolar_file->open(QIODevice::WriteOnly);
                         bipolar_file->write(full);
                         bipolar_file->close();
+
+                        data.append(bipolar_dest);
                     }
 
                     if(raw_output)

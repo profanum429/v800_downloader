@@ -1,10 +1,30 @@
 v800_downloader
 ===============
 
-Normally if you sync over iPhone then hook the watch up to a PC and run FlowSync it will check to see if all the sessions have been uploaded, and if so not download anything from the watch. V800 Downloader will let you download the session data even if it's already been uploaded by your phone or FlowSync. This data then can be converted to TCX/GPX/HRM using Bipolar (https://www.github.com/pcolby/bipolar). This tool is not a standalone conversion tool but meant to be used as a supplement to Bipolar.
+V800 Downloader is a tool that is used to download sessions from the Polar V800 watch. In normal usage there is no first party way
+to export data from the V800, but with V800 Downloader + Bipolar (https://www.github.com/pcolby/bipolar) data can be exported from
+the V800 without using any Polar software.
 
-The tool looks through the filesystem on the V800 and determines which sessions still have valid data. FlowSync will only sync a session once but it doesn't delete the session; it just creates a file that is checked whenever FlowSync runs. The actual session data (route, samples, laps, etc.) are still on the watch until they are automatically deleted by some process, probably a housekeeping thing that deletes the older data as the watch gets full from newer data. Older sessions still retain the summary and statistics but lose the route and all the detailed data.
+If you use Polar FlowSync to sync with the watch already I'd suggest using <a href="https://www.github.com/pcolby/bipolar">Bipolar</a>
+by itself as it will install a hook that will collect session data as you use FlowSync. It will be a lot simpler and not as complicated
+as using V800 Downloader.
 
-This tool lets you download the older session that still exist (in my case my watch has about a month worth of data on it when running ~4-5/hours a week). The data is output to the Bipolar directory to be converted by the Bipolar program.
+If, however, you sync with your phone, such as with the iPhone Polar Flow app, then this tool is for you. It's
+a combination of a front end that lets you select which sessions to export and formats and two backends that handle the work. The first
+backend is the USB backend that handles all communication to the V800 itself and is responsible for getting session data. The second
+backend is from <a href="https://www.github.com/pcolby/bipolar">Bipolar</a> and is responsible for doing the actual hardwork; the converting
+the session data into good formats like TCX, GPX and HRM.
 
-Finally, there is an Advanced Options mode accessed by pressing Shift+A. This will allow you select to download the files off the watch and save them in a directory with their raw names. This will also allow you to open up the V800 Filesystem Browser. Both of these features are not useful to users but might interest developers/curious folks who are interested in seeing how the V800 is layed out software-wise internally.
+Steps to use:
+1) Connect your V800 to the computer with the USB cable
+2) Run V800 Downloader; it should display a message saying that it is retrieving session data
+3) Select which sessions you desire to download from the list. You can grab as many or little as you like.
+4) Check what output formats you'd like to get
+5) Click Download Sessions. Progress will be displayed and when finished a message telling you where the files are located will be displayed.
+   Additionally any error messages will appear here also.
+6) Upload your files :)
+
+Credits:
+I couldn't of done this program without the <a href="https://www.github.com/pcolby/bipolar">Bipolar</a> project as it does the hard work of
+converting the data into actual files. All of my modifications are available at https://www.github.com/profanum429/v800_downloader, under the
+src/bipolar directory.

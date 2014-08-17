@@ -53,6 +53,27 @@ Output Directory</string>
         </widget>
        </item>
        <item>
+        <widget class="QCheckBox" name="tcxBox">
+         <property name="text">
+          <string>TCX Output?</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="hrmBox">
+         <property name="text">
+          <string>HRM Output?</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="gpxBox">
+         <property name="text">
+          <string>GPX Output?</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QPushButton" name="checkBtn">
          <property name="text">
           <string>Check All</string>
