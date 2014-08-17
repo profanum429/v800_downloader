@@ -28,6 +28,8 @@ Credits:
 I couldn't of done this program without the <a href="https://www.github.com/pcolby/bipolar">Bipolar</a> project as it does the hard work of
 converting the data into actual files. All of my modifications are available at https://www.github.com/profanum429/v800_downloader, under the
 src/bipolar directory.
+LibUSB from libusb.info. Version 1.0.19 is incorporated into V800 Downloader. I've made no source modifications.
+rawhid from https://www.pjrc.com/teensy/rawhid.html. I use the V1.0 of the OS X version for USB communication in OS X.
 
 License:
 All V800 Downloader files are licensed GPL3. The Bipolar files under src/bipolar are licensed GPL3 per the original source.
