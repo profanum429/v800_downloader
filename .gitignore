@@ -27,3 +27,5 @@ release/tmp/moc_v800fs.cpp
 release/tmp/ui_v800fs.h
 release/tmp/moc_message.cpp
 release/tmp/moc_trainingsession.cpp
+release/tmp/moc_v800export.cpp
+release/v800_downloader.app/Contents/Resources/v800_downloader.icns
