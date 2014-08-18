@@ -39,11 +39,10 @@ V800Main::V800Main(QWidget *parent) :
     connect(usb, SIGNAL(all_sessions(QList<QString>)), this, SLOT(handle_all_sessions(QList<QString>)));
     connect(usb, SIGNAL(sessions_done()), this, SLOT(handle_sessions_done()));
     connect(usb, SIGNAL(session_done()), this, SLOT(handle_session_done()));
-    connect(usb, SIGNAL(session_failed(QString, int)), this, SLOT(handle_session_failed(QString, int)));
     connect(usb, SIGNAL(ready()), this, SLOT(handle_ready()));
     connect(usb, SIGNAL(not_ready()), this, SLOT(handle_not_ready()));
 
-    connect(this, SIGNAL(get_sessions(QList<QString>, QString, bool, bool, bool, bool)), usb, SLOT(get_sessions(QList<QString>, QString, bool, bool, bool, bool)));
+    connect(this, SIGNAL(get_sessions(QList<QString>, QString)), usb, SLOT(get_sessions(QList<QString>, QString)));
 
     new QShortcut(QKeySequence(Qt::SHIFT + Qt::Key_A), this, SLOT(handle_advanced_shortcut()));
 
@@ -70,7 +69,6 @@ V800Main::V800Main(QWidget *parent) :
     ui->exerciseTree->setHeaderLabel(tr("Session"));
 
     ui->fsBtn->setVisible(false);
-    ui->rawChk->setVisible(false);
 
     ui->tcxBox->setChecked(true);
 
@@ -133,6 +131,7 @@ void V800Main::handle_session_done()
     download_progress->setLabelText(tr("Downloading %1/%2...").arg(cur_session+1).arg(sessions_cnt));
 }
 
+/*
 void V800Main::handle_session_failed(QString tag, int failure)
 {
     if(failure == V800usb::PARSE_FAILED)
@@ -143,15 +142,16 @@ void V800Main::handle_session_failed(QString tag, int failure)
         error_list.append(QString(tr("Error! %1: Failed to write HRM file!")).arg(tag));
     else if(failure == V800usb::GPX_FAILED)
         error_list.append(QString(tr("Error! %1: Failed to write GPX file!")).arg(tag));
-    /*
+
     else if(failure == V800usb::TCX_EXISTS)
         error_list.append(QString(tr("Warning: TCX for %1 already exists, skipping.")).arg(tag));
     else if(failure == V800usb::HRM_EXISTS)
         error_list.append(QString(tr("Warning: HRM for %1 already exists, skipping.")).arg(tag));
     else if(failure == V800usb::GPX_EXISTS)
         error_list.append(QString(tr("Warning: GPX for %1 already exists, skipping.")).arg(tag));
-    */
+
 }
+*/
 
 void V800Main::handle_sessions_done()
 {
@@ -182,17 +182,11 @@ void V800Main::handle_advanced_shortcut()
         ui->fsBtn->setVisible(false);
     else
         ui->fsBtn->setVisible(true);
-
-    if(ui->rawChk->isVisible())
-        ui->rawChk->setVisible(false);
-    else
-        ui->rawChk->setVisible(true);
 }
 
 void V800Main::enable_all()
 {
     ui->downloadBtn->setEnabled(true);
-    ui->rawChk->setEnabled(true);
     ui->checkBtn->setEnabled(true);
     ui->uncheckBtn->setEnabled(true);
     ui->fsBtn->setEnabled(true);
@@ -205,7 +199,6 @@ void V800Main::enable_all()
 void V800Main::disable_all()
 {
     ui->downloadBtn->setEnabled(false);
-    ui->rawChk->setEnabled(false);
     ui->checkBtn->setEnabled(false);
     ui->uncheckBtn->setEnabled(false);
     ui->fsBtn->setEnabled(false);
@@ -241,7 +234,7 @@ void V800Main::on_downloadBtn_clicked()
     download_progress->setWindowTitle(tr("V800 Downloader"));
     download_progress->show();
 
-    emit get_sessions(sessions, default_dir, ui->rawChk->isChecked(), ui->tcxBox->isChecked(), ui->hrmBox->isChecked(), ui->gpxBox->isChecked());
+    emit get_sessions(sessions, default_dir);
 }
 
 void V800Main::on_checkBtn_clicked()

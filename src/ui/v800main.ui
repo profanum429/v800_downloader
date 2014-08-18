@@ -88,15 +88,6 @@ Output Directory</string>
         </widget>
        </item>
        <item>
-        <widget class="QCheckBox" name="rawChk">
-         <property name="text">
-          <string>Include
-Raw
-Output</string>
-         </property>
-        </widget>
-       </item>
-       <item>
         <widget class="QPushButton" name="fsBtn">
          <property name="cursor">
           <cursorShape>ArrowCursor</cursorShape>
