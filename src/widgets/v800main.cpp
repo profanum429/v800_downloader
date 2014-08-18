@@ -37,18 +37,30 @@ V800Main::V800Main(QWidget *parent) :
     usb = new V800usb();
     usb->moveToThread(usb_thread);
 
+    QThread *export_data_thread = new QThread;
+    export_data = new V800export();
+    export_data->moveToThread(export_data_thread);
+
     connect(usb, SIGNAL(all_sessions(QList<QString>)), this, SLOT(handle_all_sessions(QList<QString>)));
     connect(usb, SIGNAL(sessions_done()), this, SLOT(handle_sessions_done()));
-    connect(usb, SIGNAL(session_done(int, int)), this, SLOT(handle_session_done(int, int)));
+    connect(usb, SIGNAL(session_done(QString, int, int)), this, SLOT(handle_session_done(QString, int, int)));
     connect(usb, SIGNAL(ready()), this, SLOT(handle_ready()));
     connect(usb, SIGNAL(not_ready()), this, SLOT(handle_not_ready()));
 
+    connect(export_data, SIGNAL(export_session_done(int,int)), this, SLOT(handle_export_session_done(int,int)));
+    connect(export_data, SIGNAL(export_sessions_done()), this, SLOT(handle_export_sessions_done()));
+    connect(export_data, SIGNAL(export_session_error(QString,int)), this, SLOT(handle_export_session_error(QString,int)));
+
     connect(this, SIGNAL(get_sessions(QList<QString>)), usb, SLOT(get_sessions(QList<QString>)));
+    connect(this, SIGNAL(export_sessions(QList<QString>,unsigned char)), export_data, SLOT(export_sessions(QList<QString>,unsigned char)));
 
     new QShortcut(QKeySequence(Qt::SHIFT + Qt::Key_A), this, SLOT(handle_advanced_shortcut()));
 
     connect(usb_thread, SIGNAL(started()), usb, SLOT(start()));
     usb_thread->start();
+
+    connect(export_data_thread, SIGNAL(started()), export_data, SLOT(start()));
+    export_data_thread->start();
 
     QCoreApplication::setOrganizationName(tr("profanum429"));
     QCoreApplication::setOrganizationDomain(tr("profanum429.com"));
@@ -130,49 +142,44 @@ void V800Main::handle_all_sessions(QList<QString> sessions)
     ui->exerciseTree->insertTopLevelItems(0, items);
 }
 
-void V800Main::handle_session_done(int session, int num_sessions)
+void V800Main::handle_session_done(QString session, int session_iter, int session_cnt)
 {
-    download_progress->setValue(session+1);
-    download_progress->setLabelText(tr("Downloading %1/%2...").arg(session+2).arg(num_sessions));
+    sessions_to_export.append(session);
+
+    download_progress->setValue(session_iter+1);
+    download_progress->setLabelText(tr("Downloading %1/%2...").arg(session_iter+2).arg(session_cnt));
 }
-
-/*
-void V800Main::handle_session_failed(QString tag, int failure)
-{
-    if(failure == V800usb::PARSE_FAILED)
-        error_list.append(QString(tr("Error! %1: Invalid session files!")).arg(tag));
-    else if(failure == V800usb::TCX_FAILED)
-        error_list.append(QString(tr("Error! %1: Failed to write TCX file!")).arg(tag));
-    else if(failure == V800usb::HRM_FAILED)
-        error_list.append(QString(tr("Error! %1: Failed to write HRM file!")).arg(tag));
-    else if(failure == V800usb::GPX_FAILED)
-        error_list.append(QString(tr("Error! %1: Failed to write GPX file!")).arg(tag));
-
-    else if(failure == V800usb::TCX_EXISTS)
-        error_list.append(QString(tr("Warning: TCX for %1 already exists, skipping.")).arg(tag));
-    else if(failure == V800usb::HRM_EXISTS)
-        error_list.append(QString(tr("Warning: HRM for %1 already exists, skipping.")).arg(tag));
-    else if(failure == V800usb::GPX_EXISTS)
-        error_list.append(QString(tr("Warning: GPX for %1 already exists, skipping.")).arg(tag));
-
-}
-*/
 
 void V800Main::handle_sessions_done()
+{
+    download_progress->setValue(1);
+    download_progress->setLabelText(tr("Exporting 1/%2...").arg(sessions_to_export.length()));
+
+    unsigned char export_mask = (ui->tcxBox->isChecked() ? V800export::TCX_EXPORT : 0x00) |
+                                (ui->hrmBox->isChecked() ? V800export::HRM_EXPORT : 0x00) |
+                                (ui->gpxBox->isChecked() ? V800export::GPX_EXPORT : 0x00);
+    emit export_sessions(sessions_to_export, export_mask);
+}
+
+void V800Main::handle_export_session_done(int session_iter, int session_cnt)
+{
+    download_progress->setValue(session_iter+1);
+    download_progress->setLabelText(tr("Exporting %1/%2...").arg(session_iter+2).arg(session_cnt));
+}
+
+void V800Main::handle_export_sessions_done()
 {
     download_progress->done(0);
 
     QSettings settings;
     QString default_dir = settings.value(tr("default_dir")).toString();
-    QString msg_text(QString(tr("Done downloading and converting sessions!\nLook in %1 to find your files!")).arg(default_dir));
-/*
+    QString msg_text(QString(tr("Done downloading and converting sessions\n\nLook in \n%1\nto find your files")).arg(default_dir));
+
     if(error_list.length() > 0)
-    {
-        msg_text.append(QString(tr("\n\nThe following issues occurred during downloading and conversion\n")));
-        for(int error_iter = 0; error_iter < error_list.length(); error_iter++)
-            msg_text.append(QString(tr("\n%1")).arg(error_list[error_iter]));
-    }
-*/
+        msg_text.append(tr("\n\nErrors occurred during processing\n\n"));
+    for(int error_iter = 0; error_iter < error_list.length(); error_iter++)
+        msg_text.append(QString(tr("%1\n")).arg(error_list[error_iter]));
+
     QMessageBox done;
     done.setWindowTitle(tr("V800 Downloader"));
     done.setText(msg_text);
@@ -181,6 +188,24 @@ void V800Main::handle_sessions_done()
     done.exec();
 
     enable_all();
+}
+
+void V800Main::handle_export_session_error(QString session, int error)
+{
+    if(error == V800export::RENAME_ERROR)
+        error_list.append(QString(tr("%1: Error making Bipolar names")).arg(session));
+
+    if(error == V800export::PARSE_ERROR)
+        error_list.append(QString(tr("%1: Error parsing session data")).arg(session));
+
+    if(error == V800export::TCX_ERROR)
+        error_list.append(QString(tr("%1: Error making TCX file")).arg(session));
+
+    if(error == V800export::HRM_ERROR)
+        error_list.append(QString(tr("%1: Error making HRM file")).arg(session));
+
+    if(error == V800export::GPX_ERROR)
+        error_list.append(QString(tr("%1: Error making GPX file")).arg(session));
 }
 
 void V800Main::handle_advanced_shortcut()
@@ -221,6 +246,7 @@ void V800Main::on_downloadBtn_clicked()
     unsigned char export_mask = 0x00, export_exists = 0x00;
     int item_iter;
 
+    sessions_to_export.clear();
     disable_all();
 
     QSettings settings;
@@ -255,14 +281,30 @@ void V800Main::on_downloadBtn_clicked()
         }
     }
 
-    download_progress = new QProgressDialog(tr("Downloading 1/%1...").arg(sessions.length()), tr("Cancel"), 0, sessions.length(), this);
-    download_progress->setCancelButton(0);
-    download_progress->setWindowModality(Qt::WindowModal);
-    download_progress->setValue(0);
-    download_progress->setWindowTitle(tr("V800 Downloader"));
-    download_progress->show();
+    if(sessions.length() > 0)
+    {
+        download_progress = new QProgressDialog(tr("Downloading 1/%1...").arg(sessions.length()), tr("Cancel"), 0, sessions.length(), this);
+        download_progress->setCancelButton(0);
+        download_progress->setWindowModality(Qt::WindowModal);
+        download_progress->setValue(0);
+        download_progress->setWindowTitle(tr("V800 Downloader"));
+        download_progress->show();
 
-    emit get_sessions(sessions);
+        emit get_sessions(sessions);
+    }
+    else
+    {
+        QString msg_text(QString(tr("All selected sessions have already been downloaded and exported\n\nLook in \n%1\nto find your files")).arg(default_dir));
+
+        QMessageBox done;
+        done.setWindowTitle(tr("V800 Downloader"));
+        done.setText(msg_text);
+        done.setIcon(QMessageBox::Information);
+        done.setWindowModality(Qt::WindowModal);
+        done.exec();
+
+        enable_all();
+    }
 }
 
 void V800Main::on_checkBtn_clicked()

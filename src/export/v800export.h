@@ -34,9 +34,25 @@ public:
         GPX_EXPORT = 0x04
     };
 
+    enum {
+        RENAME_ERROR = 1,
+        PARSE_ERROR,
+        TCX_ERROR,
+        HRM_ERROR,
+        GPX_ERROR
+    };
+
 signals:
+    void export_session_done(int session_iter, int session_cnt);
+    void export_sessions_done();
+    void export_session_error(QString session, int error);
 
 public slots:
+    void start();
+    void export_sessions(QList<QString> sessions, unsigned char mode);
+
+private:
+    bool make_bipolar_names(QString session);
 
 };
 

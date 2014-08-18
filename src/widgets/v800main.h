@@ -27,6 +27,7 @@ class V800Main;
 }
 
 class V800usb;
+class V800export;
 class QMessageBox;
 class QProgressDialog;
 
@@ -40,13 +41,19 @@ public:
 
 signals:
     void get_sessions(QList<QString> session);
+    void export_sessions(QList<QString> sessions, unsigned char mode);
 
 private slots:
     void handle_ready();
     void handle_not_ready();
     void handle_all_sessions(QList<QString> sessions);
-    void handle_session_done(int session, int num_sessions);
+    void handle_session_done(QString session, int session_iter, int session_cnt);
     void handle_sessions_done();
+
+    void handle_export_session_done(int session_iter, int session_cnt);
+    void handle_export_sessions_done();
+    void handle_export_session_error(QString session, int error);
+
     void handle_advanced_shortcut();
 
     void on_downloadBtn_clicked();
@@ -62,11 +69,14 @@ private:
 
     Ui::V800Main *ui;
     V800usb *usb;
+    V800export *export_data;
 
     QMessageBox *start_in_progress;
     QProgressDialog *download_progress;
 
     bool v800_ready;
+    QList<QString> sessions_to_export;
+    QList<QString> error_list;
 };
 
 #endif // V800MAIN_H
