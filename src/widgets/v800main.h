@@ -45,7 +45,7 @@ private slots:
     void handle_ready();
     void handle_not_ready();
     void handle_all_sessions(QList<QString> sessions);
-    void handle_session_done();
+    void handle_session_done(int session, int num_sessions);
     void handle_sessions_done();
     void handle_advanced_shortcut();
 
@@ -67,9 +67,6 @@ private:
     QProgressDialog *download_progress;
 
     bool v800_ready;
-    int sessions_cnt;
-
-//    QList<QString> error_list;
 };
 
 #endif // V800MAIN_H

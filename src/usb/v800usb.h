@@ -35,7 +35,7 @@ public:
 
 signals:
     void all_sessions(QList<QString> sessions);
-    void session_done();
+    void session_done(int session, int num_sessions);
     void sessions_done();
     void ready();
     void not_ready();

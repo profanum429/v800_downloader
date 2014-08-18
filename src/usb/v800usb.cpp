@@ -170,7 +170,7 @@ void V800usb::get_sessions(QList<QString> sessions)
             }
             */
 
-            emit session_done();
+            emit session_done(session_iter, sessions.length());
         }
     }
 

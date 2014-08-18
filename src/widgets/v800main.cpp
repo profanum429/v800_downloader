@@ -39,7 +39,7 @@ V800Main::V800Main(QWidget *parent) :
 
     connect(usb, SIGNAL(all_sessions(QList<QString>)), this, SLOT(handle_all_sessions(QList<QString>)));
     connect(usb, SIGNAL(sessions_done()), this, SLOT(handle_sessions_done()));
-    connect(usb, SIGNAL(session_done()), this, SLOT(handle_session_done()));
+    connect(usb, SIGNAL(session_done(int, int)), this, SLOT(handle_session_done(int, int)));
     connect(usb, SIGNAL(ready()), this, SLOT(handle_ready()));
     connect(usb, SIGNAL(not_ready()), this, SLOT(handle_not_ready()));
 
@@ -130,13 +130,10 @@ void V800Main::handle_all_sessions(QList<QString> sessions)
     ui->exerciseTree->insertTopLevelItems(0, items);
 }
 
-void V800Main::handle_session_done()
+void V800Main::handle_session_done(int session, int num_sessions)
 {
-    int cur_session;
-
-    cur_session = download_progress->value();
-    download_progress->setValue(cur_session+1);
-    download_progress->setLabelText(tr("Downloading %1/%2...").arg(cur_session+1).arg(sessions_cnt));
+    download_progress->setValue(session+1);
+    download_progress->setLabelText(tr("Downloading %1/%2...").arg(session+2).arg(num_sessions));
 }
 
 /*
@@ -225,7 +222,6 @@ void V800Main::on_downloadBtn_clicked()
     int item_iter;
 
     disable_all();
-    sessions_cnt = 0;
 
     QSettings settings;
     QString default_dir = settings.value(tr("default_dir")).toString();
@@ -255,17 +251,14 @@ void V800Main::on_downloadBtn_clicked()
                     export_exists |= V800export::GPX_EXPORT;
 
             if(export_mask != export_exists)
-            {
-                sessions_cnt++;
                 sessions.append(ui->exerciseTree->topLevelItem(item_iter)->text(0));
-            }
         }
     }
 
-    download_progress = new QProgressDialog(tr("Downloading 1/%1...").arg(sessions_cnt), tr("Cancel"), 0, sessions_cnt+1, this);
+    download_progress = new QProgressDialog(tr("Downloading 1/%1...").arg(sessions.length()), tr("Cancel"), 0, sessions.length(), this);
     download_progress->setCancelButton(0);
     download_progress->setWindowModality(Qt::WindowModal);
-    download_progress->setValue(1);
+    download_progress->setValue(0);
     download_progress->setWindowTitle(tr("V800 Downloader"));
     download_progress->show();
 
