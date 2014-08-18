@@ -22,6 +22,10 @@
 #include "message.h"
 #include "types.h"
 
+/*
+#include "os/versioninfo.h"
+*/
+
 #include <QApplication>
 #include <QDebug>
 #include <QDir>
@@ -1855,6 +1859,47 @@ QDomDocument TrainingSession::toTCX(const QString &buildTime) const
             .appendChild(doc.createTextNode(QLatin1String("Bipolar")));
         tcx.appendChild(author);
 
+/*
+        {
+            QDomElement build = doc.createElement(QLatin1String("Build"));
+            author.appendChild(build);
+            QDomElement version = doc.createElement(QLatin1String("Version"));
+            build.appendChild(version);
+            QStringList versionParts = QApplication::applicationVersion().split(QLatin1Char('.'));
+            while (versionParts.length() < 4) {
+                versionParts.append(QLatin1String("0"));
+            }
+            version.appendChild(doc.createElement(QLatin1String("VersionMajor")))
+                .appendChild(doc.createTextNode(versionParts.at(0)));
+            version.appendChild(doc.createElement(QLatin1String("VersionMinor")))
+                .appendChild(doc.createTextNode(versionParts.at(1)));
+            version.appendChild(doc.createElement(QLatin1String("BuildMajor")))
+                .appendChild(doc.createTextNode(versionParts.at(2)));
+            version.appendChild(doc.createElement(QLatin1String("BuildMinor")))
+                .appendChild(doc.createTextNode(versionParts.at(3)));
+            QString buildType = QLatin1String("Release");
+            VersionInfo versionInfo;
+            const QString specialBuild = versionInfo.fileInfo(QLatin1String("SpecialBuild"));
+            if (!specialBuild.isEmpty()) {
+                buildType = specialBuild;
+            }
+            build.appendChild(doc.createElement(QLatin1String("Type")))
+                .appendChild(doc.createTextNode(buildType));
+            build.appendChild(doc.createElement(QLatin1String("Time")))
+                .appendChild(doc.createTextNode(
+                    buildTime.isEmpty() ? QString::fromLatin1(__DATE__" "__TIME__) : buildTime));
+            #ifdef BUILD_USER
+            #define BIPOLAR_STRINGIFY(string) #string
+            #define BIPOLAR_EXPAND_AND_STRINGIFY(macro) BIPOLAR_STRINGIFY(macro)
+            build.appendChild(doc.createElement(QLatin1String("Builder")))
+                .appendChild(doc.createTextNode(QLatin1String(
+                    BIPOLAR_EXPAND_AND_STRINGIFY(BUILD_USER))));
+            #undef BIPOLAR_EXPAND_AND_STRINGIFY
+            #undef BIPOLAR_STRINGIFY
+            #endif
+        }
+*/
+
         /// @todo  Make this dynamic if/when app is localized.
         author.appendChild(doc.createElement(QLatin1String("LangID")))
             .appendChild(doc.createTextNode(QLatin1String("EN")));
@@ -1870,7 +1915,6 @@ void TrainingSession::addLapStats(QDomDocument &doc, QDomElement &lap,
                                   const double duration,
                                   const double distance) const
 {
-    /// @todo  Sort out trailing duration / distance.
     lap.appendChild(doc.createElement(QLatin1String("TotalTimeSeconds")))
         .appendChild(doc.createTextNode(QString::fromLatin1("%1").arg(qMax(
             duration, getDuration(firstMap(base.value(QLatin1String("duration"))))/1000.0))));
