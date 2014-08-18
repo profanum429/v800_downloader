@@ -43,7 +43,7 @@ V800Main::V800Main(QWidget *parent) :
     connect(usb, SIGNAL(ready()), this, SLOT(handle_ready()));
     connect(usb, SIGNAL(not_ready()), this, SLOT(handle_not_ready()));
 
-    connect(this, SIGNAL(get_sessions(QList<QString>, QString)), usb, SLOT(get_sessions(QList<QString>, QString)));
+    connect(this, SIGNAL(get_sessions(QList<QString>)), usb, SLOT(get_sessions(QList<QString>)));
 
     new QShortcut(QKeySequence(Qt::SHIFT + Qt::Key_A), this, SLOT(handle_advanced_shortcut()));
 
@@ -55,13 +55,20 @@ V800Main::V800Main(QWidget *parent) :
     QCoreApplication::setApplicationName(tr("V800 Downloader"));
 
     QSettings settings;
-    default_dir = settings.value(tr("default_dir")).toString();
+    QString default_dir = settings.value(tr("default_dir")).toString();
     if(default_dir.isEmpty())
     {
-        qDebug("Default dir empty!");
         default_dir = QString((QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + QString(tr("/Polar/PolarFlowSync/export"))));
         settings.setValue(tr("default_dir"), default_dir);
     }
+
+    QString file_dir = settings.value(tr("file_dir")).toString();
+    if(file_dir.isEmpty())
+    {
+        file_dir = QString((QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) + QString(tr("/Polar/PolarFlowSync/export"))));
+        settings.setValue(tr("file_dir"), file_dir);
+    }
+
 
     ui->setupUi(this);
     ui->verticalLayout->setAlignment(Qt::AlignTop);
@@ -158,15 +165,17 @@ void V800Main::handle_sessions_done()
 {
     download_progress->done(0);
 
+    QSettings settings;
+    QString default_dir = settings.value(tr("default_dir")).toString();
     QString msg_text(QString(tr("Done downloading and converting sessions!\nLook in %1 to find your files!")).arg(default_dir));
-
+/*
     if(error_list.length() > 0)
     {
         msg_text.append(QString(tr("\n\nThe following issues occurred during downloading and conversion\n")));
         for(int error_iter = 0; error_iter < error_list.length(); error_iter++)
             msg_text.append(QString(tr("\n%1")).arg(error_list[error_iter]));
     }
-
+*/
     QMessageBox done;
     done.setWindowTitle(tr("V800 Downloader"));
     done.setText(msg_text);
@@ -217,6 +226,9 @@ void V800Main::on_downloadBtn_clicked()
 
     disable_all();
     sessions_cnt = 0;
+
+    QSettings settings;
+    QString default_dir = settings.value(tr("default_dir")).toString();
 
     for(item_iter = 0; item_iter < ui->exerciseTree->topLevelItemCount(); item_iter++)
     {
@@ -285,12 +297,13 @@ void V800Main::on_fsBtn_clicked()
 
 void V800Main::on_dirSelectBtn_clicked()
 {
+    QSettings settings;
+    QString default_dir = settings.value(tr("default_dir")).toString();
+
     QString new_default_dir = QFileDialog::getExistingDirectory(this, tr("Default Save Directory"), default_dir, QFileDialog::ShowDirsOnly);
     if(!new_default_dir.isEmpty())
     {
-        default_dir = new_default_dir;
-
         QSettings settings;
-        settings.setValue(tr("default_dir"), default_dir);
+        settings.setValue(tr("default_dir"), new_default_dir);
     }
 }

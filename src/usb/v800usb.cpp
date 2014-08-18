@@ -23,7 +23,7 @@
 #include <QDateTime>
 #include <QStringList>
 #include <QDir>
-#include <QStandardPaths>
+#include <QSettings>
 #include <stdio.h>
 
 #include "native_usb.h"
@@ -58,15 +58,13 @@ void V800usb::start()
     }
 }
 
-void V800usb::get_sessions(QList<QString> sessions, QString default_dir)
+void V800usb::get_sessions(QList<QString> sessions)
 {
     QString session;
     QStringList session_split;
     QList<QString> files, temp_session_files, temp_files;
     QDateTime session_time;
     int session_iter, files_iter;
-
-    this->default_dir = default_dir;
 
     for(session_iter = 0; session_iter < sessions.length(); session_iter++)
     {
@@ -187,10 +185,8 @@ void V800usb::get_all_objects(QString path)
     emit all_objects(objects);
 }
 
-void V800usb::get_file(QString path, QString file_dir)
+void V800usb::get_file(QString path)
 {
-    this->file_dir = file_dir;
-
     get_v800_data(path, true);
     emit file_done();
 }
@@ -321,6 +317,9 @@ QList<QString> V800usb::get_v800_data(QString request, bool debug)
 
                     QString tag = QDateTime(QDate::fromString(date, tr("yyyyMMdd")), QTime::fromString(time, tr("HHmmss"))).toString(tr("yyyyMMddhhmmss"));
 
+                    QSettings settings;
+                    QString default_dir = settings.value(tr("default_dir")).toString();
+
                     QString raw_dir = (QString(tr("%1/%2")).arg(default_dir).arg(tag));
                     QDir(raw_dir).mkpath(raw_dir);
 
@@ -368,6 +367,9 @@ QList<QString> V800usb::get_v800_data(QString request, bool debug)
                 if(request.contains(tr(".")))
                 {
                     request.replace(tr("/"), tr("_"));
+
+                    QSettings settings;
+                    QString file_dir = settings.value(tr("file_dir")).toString();
 
                     QFile *debug_file;
                     debug_file = new QFile(QString(tr("%1/%2")).arg(file_dir).arg(request));

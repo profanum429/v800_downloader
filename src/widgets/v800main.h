@@ -69,9 +69,7 @@ private:
     bool v800_ready;
     int sessions_cnt;
 
-    QString default_dir;
-
-    QList<QString> error_list;
+//    QList<QString> error_list;
 };
 
 #endif // V800MAIN_H

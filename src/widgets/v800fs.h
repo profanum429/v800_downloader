@@ -42,7 +42,7 @@ public:
 
 signals:
     void get_objects(QString path);
-    void get_file(QString path, QString save_dir);
+    void get_file(QString path);
 
 public slots:
     void handle_all_objects(QList<QString> objects);

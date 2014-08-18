@@ -34,7 +34,7 @@ V800fs::V800fs(V800usb *usb, QWidget *parent) :
     connect(usb, SIGNAL(file_done()), this, SLOT(handle_file_done()));
 
     connect(this, SIGNAL(get_objects(QString)), usb, SLOT(get_all_objects(QString)));
-    connect(this, SIGNAL(get_file(QString, QString)), usb, SLOT(get_file(QString, QString)));
+    connect(this, SIGNAL(get_file(QString)), usb, SLOT(get_file(QString)));
 
     ui->setupUi(this);
     ui->v800Tree->setColumnCount(1);
@@ -114,12 +114,18 @@ void V800fs::on_v800Tree_itemExpanded(QTreeWidgetItem *item)
 
 void V800fs::on_downloadBtn_clicked()
 {
-    QString save_dir;
+    QString new_file_dir;
 
     disable_all();
 
-    save_dir = QFileDialog::getExistingDirectory(this, tr("Save Directory"), QDir::homePath(), QFileDialog::ShowDirsOnly);
-    if(save_dir == tr(""))
+    QSettings settings;
+    QString file_dir = settings.value(tr("file_dir")).toString();
+    new_file_dir = QFileDialog::getExistingDirectory(this, tr("Save Directory"), file_dir, QFileDialog::ShowDirsOnly);
+    if(!new_file_dir.isEmpty())
+    {
+        settings.setValue(tr("file_dir"), new_file_dir);
+    }
+    else
     {
         enable_all();
         return;
@@ -144,7 +150,7 @@ void V800fs::on_downloadBtn_clicked()
     }
 
     qDebug("Path: %s", path.toUtf8().constData());
-    emit get_file(path, save_dir);
+    emit get_file(path);
 }
 
 void V800fs::on_v800Tree_itemSelectionChanged()
