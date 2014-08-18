@@ -39,7 +39,7 @@ public:
     ~V800Main();
 
 signals:
-    void get_sessions(QList<QString> session, QString save_dir);
+    void get_sessions(QList<QString> session);
 
 private slots:
     void handle_ready();

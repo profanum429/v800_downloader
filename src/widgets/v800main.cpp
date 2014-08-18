@@ -20,6 +20,7 @@
 #include "v800main.h"
 #include "ui_v800main.h"
 #include "v800usb.h"
+#include "v800export.h"
 #include "v800fs.h"
 
 #include <QtWidgets>
@@ -211,6 +212,7 @@ void V800Main::disable_all()
 void V800Main::on_downloadBtn_clicked()
 {
     QList<QString> sessions;
+    unsigned char export_mask = 0x00, export_exists = 0x00;
     int item_iter;
 
     disable_all();
@@ -218,14 +220,35 @@ void V800Main::on_downloadBtn_clicked()
 
     for(item_iter = 0; item_iter < ui->exerciseTree->topLevelItemCount(); item_iter++)
     {
+        export_mask = 0x00;
+        export_exists = 0x00;
+
         if(ui->exerciseTree->topLevelItem(item_iter)->checkState(0) == Qt::Checked)
         {
-            sessions_cnt++;
-            sessions.append(ui->exerciseTree->topLevelItem(item_iter)->text(0));
+            export_mask = (ui->tcxBox->isChecked() ? V800export::TCX_EXPORT : 0x00) |
+                          (ui->hrmBox->isChecked() ? V800export::HRM_EXPORT : 0x00) |
+                          (ui->gpxBox->isChecked() ? V800export::GPX_EXPORT : 0x00);
+
+            QStringList session_split = (QDateTime::fromString(ui->exerciseTree->topLevelItem(item_iter)->text(0), Qt::TextDate)).toString(tr("yyyyMMdd/HHmmss")).split(tr("/"));
+            QString tag = QDateTime(QDate::fromString(session_split[0], tr("yyyyMMdd")), QTime::fromString(session_split[1], tr("HHmmss"))).toString(tr("yyyyMMddhhmmss"));
+
+            if(export_mask & V800export::TCX_EXPORT)
+                if(QFile::exists(QString(tr("%1/%2.tcx")).arg(default_dir).arg(tag)))
+                    export_exists |= V800export::TCX_EXPORT;
+            if(export_mask & V800export::HRM_EXPORT)
+                if(QFile::exists(QString(tr("%1/%2.hrm")).arg(default_dir).arg(tag)))
+                    export_exists |= V800export::HRM_EXPORT;
+            if(export_mask & V800export::GPX_EXPORT)
+                if(QFile::exists(QString(tr("%1/%2.gpx")).arg(default_dir).arg(tag)))
+                    export_exists |= V800export::GPX_EXPORT;
+
+            if(export_mask != export_exists)
+            {
+                sessions_cnt++;
+                sessions.append(ui->exerciseTree->topLevelItem(item_iter)->text(0));
+            }
         }
     }
-
-    error_list.clear();
 
     download_progress = new QProgressDialog(tr("Downloading 1/%1...").arg(sessions_cnt), tr("Cancel"), 0, sessions_cnt+1, this);
     download_progress->setCancelButton(0);
@@ -234,7 +257,7 @@ void V800Main::on_downloadBtn_clicked()
     download_progress->setWindowTitle(tr("V800 Downloader"));
     download_progress->show();
 
-    emit get_sessions(sessions, default_dir);
+    emit get_sessions(sessions);
 }
 
 void V800Main::on_checkBtn_clicked()

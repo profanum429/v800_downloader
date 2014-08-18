@@ -28,6 +28,12 @@ class V800export : public QObject
 public:
     explicit V800export(QObject *parent = 0);
 
+    enum {
+        TCX_EXPORT = 0x01,
+        HRM_EXPORT = 0x02,
+        GPX_EXPORT = 0x04
+    };
+
 signals:
 
 public slots:
