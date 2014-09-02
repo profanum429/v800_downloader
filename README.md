@@ -1,6 +1,8 @@
 v800_downloader
 ===============
 
+Update: Release 3 still works with the new 1.0.12 firmware but right after the update you won't see any sessions since when the firmware updates all the sessions on the watch have their full set of data removed and leave only the statistics information behind. Any new activities will be downloadable :)
+
 V800 Downloader is a tool that is used to download sessions from the Polar V800 watch. In normal usage there is no first party way
 to export data from the V800, but with V800 Downloader + Bipolar (https://www.github.com/pcolby/bipolar) data can be exported from
 the V800 without using any Polar software.
