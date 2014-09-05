@@ -62,9 +62,9 @@ void V800usb::get_sessions(QList<QString> sessions)
 {
     QString session;
     QStringList session_split;
-    QList<QString> files, temp_session_files, temp_files;
+    QList<QString> multi_sports, files, temp_session_files, temp_files;
     QDateTime session_time;
-    int session_iter, files_iter;
+    int session_iter, files_iter, multi_sports_iter, multi_sport_cnt;
 
     for(session_iter = 0; session_iter < sessions.length(); session_iter++)
     {
@@ -74,22 +74,36 @@ void V800usb::get_sessions(QList<QString> sessions)
 
         if(session_split.length() == 2)
         {
-            files.clear();
-            files = get_v800_data(QString(tr("%1/%2/E/%3/00/")).arg(tr(V800_ROOT_DIR)).arg(session_split[0]).arg(session_split[1]));
+            multi_sports.clear();
+            multi_sports = get_v800_data(QString(tr("%1/%2/E/%3/")).arg(tr(V800_ROOT_DIR)).arg(session_split[0]).arg(session_split[1]));
 
-            for(files_iter = 0; files_iter < files.length(); files_iter++)
+            multi_sport_cnt = 0;
+
+            for(multi_sports_iter = 0; multi_sports_iter < multi_sports.length(); multi_sports_iter++)
             {
-                temp_files = get_v800_data(QString(tr("%1/%2/E/%3/00/%4")).arg(tr(V800_ROOT_DIR)).arg(session_split[0]).arg(session_split[1]).arg(files[files_iter]));
-                if(temp_files.length() == 1)
-                    temp_session_files.append(temp_files[0]);
-            }
+                if(multi_sports[multi_sports_iter].contains(tr("/")))
+                {
+                    files.clear();
+                    files = get_v800_data(QString(tr("%1/%2/E/%3/%4/")).arg(tr(V800_ROOT_DIR)).arg(session_split[0]).arg(session_split[1]).arg(multi_sports[multi_sports_iter]));
 
-            temp_files = get_v800_data(QString(tr("%1/%2/E/%3/TSESS.BPB")).arg(tr(V800_ROOT_DIR)).arg(session_split[0]).arg(session_split[1]));
-            if(temp_files.length() == 1)
-                temp_session_files.append(temp_files[0]);
-            temp_files = get_v800_data(QString(tr("%1/%2/E/%3/PHYSDATA.BPB")).arg(tr(V800_ROOT_DIR)).arg(session_split[0]).arg(session_split[1]));
-            if(temp_files.length() == 1)
-                temp_session_files.append(temp_files[0]);
+                    for(files_iter = 0; files_iter < files.length(); files_iter++)
+                    {
+                        temp_files = get_v800_data(QString(tr("%1/%2/E/%3/%4/%5")).arg(tr(V800_ROOT_DIR)).arg(session_split[0]).arg(session_split[1]).arg(multi_sports[multi_sports_iter]).arg(files[files_iter]), multi_sport_cnt);
+                        if(temp_files.length() == 1)
+                            temp_session_files.append(temp_files[0]);
+                    }
+
+                    temp_files = get_v800_data(QString(tr("%1/%2/E/%3/TSESS.BPB")).arg(tr(V800_ROOT_DIR)).arg(session_split[0]).arg(session_split[1]), multi_sport_cnt);
+                    if(temp_files.length() == 1)
+                        temp_session_files.append(temp_files[0]);
+
+                    temp_files = get_v800_data(QString(tr("%1/%2/E/%3/PHYSDATA.BPB")).arg(tr(V800_ROOT_DIR)).arg(session_split[0]).arg(session_split[1]), multi_sport_cnt);
+                    if(temp_files.length() == 1)
+                        temp_session_files.append(temp_files[0]);
+
+                    multi_sport_cnt++;
+                }
+            }
 
             QString tag = QDateTime(QDate::fromString(session_split[0], tr("yyyyMMdd")), QTime::fromString(session_split[1], tr("HHmmss"))).toString(tr("yyyyMMddhhmmss"));
             emit session_done(tag, session_iter, sessions.length());
@@ -159,7 +173,7 @@ void V800usb::get_all_sessions()
     emit all_sessions(sessions);
 }
 
-QList<QString> V800usb::get_v800_data(QString request, bool debug)
+QList<QString> V800usb::get_v800_data(QString request, int multi_sport, bool debug)
 {
     QList<QString> data;
     QByteArray packet, full;
@@ -242,12 +256,12 @@ QList<QString> V800usb::get_v800_data(QString request, bool debug)
                     QSettings settings;
                     QString default_dir = settings.value(tr("default_dir")).toString();
 
-                    QString raw_dir = (QString(tr("%1/%2")).arg(default_dir).arg(tag));
+                    QString raw_dir = (QString(tr("%1/%2%3")).arg(default_dir).arg(tag).arg(multi_sport));
                     QDir(raw_dir).mkpath(raw_dir);
 
                     QString raw_dest = (QString(tr("%1/%2")).arg(raw_dir).arg(file));
 
-                    //qDebug("Path: %s", raw_dest.toUtf8().constData());
+                    qDebug("Path: %s", raw_dest.toUtf8().constData());
 
                     QFile *raw_file;
                     raw_file = new QFile(raw_dest);

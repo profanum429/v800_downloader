@@ -37,45 +37,59 @@ void V800export::export_sessions(QList<QString> sessions, unsigned char mode)
     QSettings settings;
     QString default_dir = settings.value(tr("default_dir")).toString();
 
-    for(int session_iter = 0; session_iter < sessions.length(); session_iter++)
+    for(int sessions_iter = 0; sessions_iter < sessions.length(); sessions_iter++)
     {
-        if(!make_bipolar_names(sessions[session_iter]))
+        QStringList filters;
+        filters << QString(tr("%1*")).arg(sessions[sessions_iter]);
+
+        QDir filter_dir(default_dir);
+        filter_dir.setNameFilters(filters);
+        filter_dir.setFilter(QDir::Dirs);
+
+        int multi_sessions_iter;
+        QStringList multi_sessions = filter_dir.entryList();
+        for(multi_sessions_iter = 0; multi_sessions_iter < multi_sessions.length(); multi_sessions_iter++)
         {
-            emit export_session_error(sessions[session_iter], RENAME_ERROR);
-            continue;
+            if(!make_bipolar_names(multi_sessions[multi_sessions_iter]))
+            {
+                emit export_session_error(sessions[sessions_iter], RENAME_ERROR);
+                continue;
+            }
+
+            QString session_info(QString(tr("%1/%2/v2-users-0000000-training-sessions-%3")).arg(default_dir).arg(multi_sessions[multi_sessions_iter]).arg(multi_sessions[multi_sessions_iter]));
+            polar::v2::TrainingSession parser(session_info);
+
+            qDebug("Parser: %s", session_info.toUtf8().constData());
+
+            if(!parser.parse())
+                emit export_session_error(sessions[sessions_iter], PARSE_ERROR);
+
+            if(mode & TCX_EXPORT)
+            {
+                QString tcx(QString(tr("%1/%2.tcx")).arg(default_dir).arg(multi_sessions[multi_sessions_iter]));
+                if(!parser.writeTCX(tcx))
+                    emit export_session_error(sessions[sessions_iter], TCX_ERROR);
+            }
+
+            if(mode & HRM_EXPORT)
+            {
+                QString hrm(QString(tr("%1/%2")).arg(default_dir).arg(multi_sessions[multi_sessions_iter]));
+                QStringList hrm_out = parser.writeHRM(hrm);
+                if(hrm_out.length() < 1)
+                    emit export_session_error(sessions[sessions_iter], HRM_ERROR);
+            }
+
+            if(mode & GPX_EXPORT)
+            {
+                QString gpx(QString(tr("%1/%2.gpx")).arg(default_dir).arg(multi_sessions[multi_sessions_iter]));
+                if(!parser.writeGPX(gpx))
+                    emit export_session_error(sessions[sessions_iter], GPX_ERROR);
+            }
+
+            QDir(QString(tr("%1/%2")).arg(default_dir).arg(multi_sessions[multi_sessions_iter])).removeRecursively();
         }
 
-        QString session_info(QString(tr("%1/%2/v2-users-0000000-training-sessions-%3")).arg(default_dir).arg(sessions[session_iter]).arg(sessions[session_iter]));
-        polar::v2::TrainingSession parser(session_info);
-
-        if(!parser.parse())
-            emit export_session_error(sessions[session_iter], PARSE_ERROR);
-
-        if(mode & TCX_EXPORT)
-        {
-            QString tcx(QString(tr("%1/%2.tcx")).arg(default_dir).arg(sessions[session_iter]));
-            if(!parser.writeTCX(tcx))
-                emit export_session_error(sessions[session_iter], TCX_ERROR);
-        }
-
-        if(mode & HRM_EXPORT)
-        {
-            QString hrm(QString(tr("%1/%2")).arg(default_dir).arg(sessions[session_iter]));
-            QStringList hrm_out = parser.writeHRM(hrm);
-            if(hrm_out.length() < 1)
-                emit export_session_error(sessions[session_iter], HRM_ERROR);
-        }
-
-        if(mode & GPX_EXPORT)
-        {
-            QString gpx(QString(tr("%1/%2.gpx")).arg(default_dir).arg(sessions[session_iter]));
-            if(!parser.writeGPX(gpx))
-                emit export_session_error(sessions[session_iter], GPX_ERROR);
-        }
-
-        QDir(QString(tr("%1/%2")).arg(default_dir).arg(sessions[session_iter])).removeRecursively();
-
-        emit export_session_done(session_iter, sessions.length());
+        emit export_session_done(sessions_iter, sessions.length());
     }
 
     emit export_sessions_done();

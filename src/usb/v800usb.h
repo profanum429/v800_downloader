@@ -57,7 +57,7 @@ private:
     int is_end(QByteArray packet);
     QByteArray add_to_full(QByteArray packet, QByteArray full, bool initial_packet, bool final_packet);
 
-    QList<QString> get_v800_data(QString request, bool debug=false);
+    QList<QString> get_v800_data(QString request, int multi_sport = 0, bool debug=false);
 
     void get_all_sessions();
 
