@@ -61,6 +61,8 @@ void V800export::export_sessions(QList<QString> sessions, unsigned char mode)
 
             qDebug("Parser: %s", session_info.toUtf8().constData());
 
+            parser.setTcxOption(polar::v2::TrainingSession::ForceTcxUTC, true);
+
             if(!parser.parse())
                 emit export_session_error(sessions[sessions_iter], PARSE_ERROR);
 

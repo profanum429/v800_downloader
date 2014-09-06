@@ -40,6 +40,7 @@ namespace v2 {
  */
 class TrainingSession : public QObject {
     Q_OBJECT
+    Q_PROPERTY(int exerciseCount READ exerciseCount)
 
 public:
     enum OutputFormat {
@@ -50,7 +51,28 @@ public:
     };
     Q_DECLARE_FLAGS(OutputFormats, OutputFormat)
 
+    enum GpxOption {
+        CluetrustGpxExtension     = 0x1001,
+        GarminTrackPointExtension = 0x1002,
+    };
+    Q_DECLARE_FLAGS(GpxOptions, GpxOption)
+
+    enum HrmOption {
+        RrFiles  = 0x0001,
+        LapNames = 0x0002,
+    };
+    Q_DECLARE_FLAGS(HrmOptions, HrmOption)
+
+    enum TcxOption {
+        ForceTcxUTC = 0x0001,
+        GarminActivityExtension = 0x1001,
+        GarminCourceExtension   = 0x1002,
+    };
+    Q_DECLARE_FLAGS(TcxOptions, TcxOption)
+
     TrainingSession(const QString &baseName);
+
+    int exerciseCount() const;
 
     QStringList getOutputFileNames(const QString &fileNameFormat,
                                    const OutputFormats outputFormats,
@@ -59,6 +81,13 @@ public:
     bool isValid() const;
 
     bool parse();
+
+    void setGpxOption(const GpxOption option, const bool enabled = true);
+    void setHrmOption(const HrmOption option, const bool enabled = true);
+    void setTcxOption(const TcxOption option, const bool enabled = true);
+    void setGpxOptions(const GpxOptions options);
+    void setHrmOptions(const HrmOptions options);
+    void setTcxOptions(const TcxOptions options);
 
     QString writeGPX(const QString &fileNameFormat, QString outputDirName);
     bool writeGPX(const QString &fileName) const;
@@ -76,6 +105,10 @@ protected:
     QVariantMap parsedExercises;
     QVariantMap parsedPhysicalInformation;
     QVariantMap parsedSession;
+
+    GpxOptions gpxOptions;
+    HrmOptions hrmOptions;
+    TcxOptions tcxOptions;
 
     static QString getTcxSport(const quint64 &polarSportValue);
     QString getOutputBaseFileName(const QString &format);
@@ -120,6 +153,11 @@ private:
                      const double duration = 0, const double distance = 0) const;
 
 };
+
+Q_DECLARE_OPERATORS_FOR_FLAGS(TrainingSession::OutputFormats);
+Q_DECLARE_OPERATORS_FOR_FLAGS(TrainingSession::GpxOptions);
+Q_DECLARE_OPERATORS_FOR_FLAGS(TrainingSession::HrmOptions);
+Q_DECLARE_OPERATORS_FOR_FLAGS(TrainingSession::TcxOptions);
 
 }}
 
