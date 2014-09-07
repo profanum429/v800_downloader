@@ -154,6 +154,7 @@ void V800Main::handle_sessions_done()
 {
     download_progress->setValue(1);
     download_progress->setLabelText(tr("Exporting 1/%2...").arg(sessions_to_export.length()));
+    download_progress->show();
 
     unsigned char export_mask = (ui->tcxBox->isChecked() ? V800export::TCX_EXPORT : 0x00) |
                                 (ui->hrmBox->isChecked() ? V800export::HRM_EXPORT : 0x00) |

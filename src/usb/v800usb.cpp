@@ -256,7 +256,7 @@ QList<QString> V800usb::get_v800_data(QString request, int multi_sport, bool deb
                     QSettings settings;
                     QString default_dir = settings.value(tr("default_dir")).toString();
 
-                    QString raw_dir = (QString(tr("%1/%2%3")).arg(default_dir).arg(tag).arg(multi_sport));
+                    QString raw_dir = (QString(tr("%1/%2_%3")).arg(default_dir).arg(tag).arg(multi_sport));
                     QDir(raw_dir).mkpath(raw_dir);
 
                     QString raw_dest = (QString(tr("%1/%2")).arg(raw_dir).arg(file));

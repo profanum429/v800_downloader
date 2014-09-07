@@ -40,7 +40,7 @@ void V800export::export_sessions(QList<QString> sessions, unsigned char mode)
     for(int sessions_iter = 0; sessions_iter < sessions.length(); sessions_iter++)
     {
         QStringList filters;
-        filters << QString(tr("%1*")).arg(sessions[sessions_iter]);
+        filters << QString(tr("%1_*")).arg(sessions[sessions_iter]);
 
         QDir filter_dir(default_dir);
         filter_dir.setNameFilters(filters);
