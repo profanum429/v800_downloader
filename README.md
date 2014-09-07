@@ -1,6 +1,8 @@
 v800_downloader
 ===============
 
+Update: Release 4 now properly supports multisport sessions. Exported files will have a _(NUMBER) appended to them before the extension. This number is the order of the sport in the multisport session. Single sport sessions now have a _0 appended before the extension to represent that this is sport 1 of the session.
+
 Update: Release 3 still works with the new 1.0.12 firmware but right after the update you won't see any sessions since when the firmware updates all the sessions on the watch have their full set of data removed and leave only the statistics information behind. Any new activities will be downloadable :)
 
 V800 Downloader is a tool that is used to download sessions from the Polar V800 watch. In normal usage there is no first party way
