@@ -29,3 +29,6 @@ release/tmp/moc_message.cpp
 release/tmp/moc_trainingsession.cpp
 release/tmp/moc_v800export.cpp
 release/v800_downloader.app/Contents/Resources/v800_downloader.icns
+debug/tmp/moc_message.cpp
+debug/tmp/moc_trainingsession.cpp
+debug/tmp/moc_v800export.cpp

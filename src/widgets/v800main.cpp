@@ -268,13 +268,13 @@ void V800Main::on_downloadBtn_clicked()
             QString tag = QDateTime(QDate::fromString(session_split[0], tr("yyyyMMdd")), QTime::fromString(session_split[1], tr("HHmmss"))).toString(tr("yyyyMMddhhmmss"));
 
             if(export_mask & V800export::TCX_EXPORT)
-                if(QFile::exists(QString(tr("%1/%2.tcx")).arg(default_dir).arg(tag)))
+                if(QFile::exists(QString(tr("%1/%2_0.tcx")).arg(default_dir).arg(tag)))
                     export_exists |= V800export::TCX_EXPORT;
             if(export_mask & V800export::HRM_EXPORT)
-                if(QFile::exists(QString(tr("%1/%2.hrm")).arg(default_dir).arg(tag)))
+                if(QFile::exists(QString(tr("%1/%2_0.hrm")).arg(default_dir).arg(tag)))
                     export_exists |= V800export::HRM_EXPORT;
             if(export_mask & V800export::GPX_EXPORT)
-                if(QFile::exists(QString(tr("%1/%2.gpx")).arg(default_dir).arg(tag)))
+                if(QFile::exists(QString(tr("%1/%2_0.gpx")).arg(default_dir).arg(tag)))
                     export_exists |= V800export::GPX_EXPORT;
 
             if(export_mask != export_exists)

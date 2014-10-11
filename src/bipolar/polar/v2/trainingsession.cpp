@@ -61,12 +61,24 @@ int TrainingSession::exerciseCount() const
     return (isValid()) ? parsedExercises.count() : -1;
 }
 
+#define TCX_RUNNING QLatin1String("Running")
+#define TCX_BIKING  QLatin1String("Biking")
+#define TCX_OTHER   QLatin1String("Other")
+
+QString TrainingSession::getTcxCadenceSensor(const quint64 &polarSportValue)
+{
+    const QString tcxSport = getTcxSport(polarSportValue);
+    if (tcxSport == TCX_BIKING) {
+        return QLatin1String("Bike");
+    } else if (tcxSport == TCX_RUNNING) {
+        return QLatin1String("Footpod");
+    }
+    return QString();
+}
+
 /// @see https://github.com/pcolby/bipolar/wiki/Polar-Sport-Types
 QString TrainingSession::getTcxSport(const quint64 &polarSportValue)
 {
-    #define TCX_RUNNING QLatin1String("Running")
-    #define TCX_BIKING  QLatin1String("Biking")
-    #define TCX_OTHER   QLatin1String("Other")
     static QMap<quint64, QString> map;
     if (map.isEmpty()) {
         map.insert( 1, TCX_RUNNING); // Running
@@ -1709,6 +1721,10 @@ QDomDocument TrainingSession::toTCX(const QString &buildTime) const
     tcx.setAttribute(QLatin1String("xsi:schemaLocation"),
                      QLatin1String("http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2 "
                                    "http://www.garmin.com/xmlschemas/TrainingCenterDatabasev2.xsd"));
+    if (tcxOptions.testFlag(GarminActivityExtension)) {
+        tcx.setAttribute(QLatin1String("xmlns:ax2"),
+                         QLatin1String("http://www.garmin.com/xmlschemas/ActivityExtension/v2"));
+    }
     doc.appendChild(tcx);
 
     QDomElement activities = doc.createElement(QLatin1String("Activities"));
@@ -1868,6 +1884,53 @@ QDomDocument TrainingSession::toTCX(const QString &buildTime) const
 
                 track = doc.createElement(QLatin1String("Track"));
                 lap.appendChild(track);
+
+                // Add any enabled extensions.
+                if (tcxOptions.testFlag(GarminActivityExtension)) {
+                    QDomElement extensions = doc.createElement(QLatin1String("Extensions"));
+                    lap.appendChild(extensions);
+
+                    // Add the Garmin Activity Extension.
+                    if (tcxOptions.testFlag(GarminActivityExtension)) {
+                        QDomElement lx = doc.createElement(QLatin1String("LX"));
+                        lx.setAttribute(QLatin1String("xmlns"),
+                            QLatin1String("http://www.garmin.com/xmlschemas/ActivityExtension/v2"));
+                        extensions.appendChild(lx);
+
+                        if (stats.contains(QLatin1String("speed"))) {
+                            lx.appendChild(doc.createElement(QLatin1String("AvgSpeed")))
+                                .appendChild(doc.createTextNode(QString::fromLatin1("%1")
+                                    .arg(first(firstMap(stats.value(QLatin1String("speed")))
+                                        .value(QLatin1String("average"))).toDouble())));
+                        }
+
+                        if (stats.contains(QLatin1String("cadence"))) {
+                            const QVariantMap cadence = firstMap(stats.value(QLatin1String("cadence")));
+
+                            const QString sensor = getTcxCadenceSensor(
+                                first(firstMap(create.value(QLatin1String("sport")))
+                                                .value(QLatin1String("value"))).toULongLong());
+
+                            if (sensor != QLatin1String("Footpod")) {
+                                lx.appendChild(doc.createElement(QLatin1String("MaxBikeCadence")))
+                                    .appendChild(doc.createTextNode(QString::fromLatin1("%1")
+                                        .arg(first(cadence.value(QLatin1String("maximum"))).toUInt())));
+                            }
+
+                            lx.appendChild(doc.createElement(QLatin1String("AvgRunCadence")))
+                                .appendChild(doc.createTextNode(QString::fromLatin1("%1")
+                                    .arg(first(cadence.value(QLatin1String("average"))).toUInt())));
+
+                            if (sensor == QLatin1String("Footpod")) {
+                                lx.appendChild(doc.createElement(QLatin1String("MaxRunCadence")))
+                                    .appendChild(doc.createTextNode(QString::fromLatin1("%1")
+                                        .arg(first(cadence.value(QLatin1String("maximum"))).toUInt())));
+                            }
+
+                            /// @todo AvgWatts and MaxWatts when power data is available.
+                        }
+                    }
+                }
             }
 
             QDomElement trackPoint = doc.createElement(QLatin1String("Trackpoint"));
@@ -1903,6 +1966,34 @@ QDomDocument TrainingSession::toTCX(const QString &buildTime) const
                     .appendChild(doc.createTextNode(cadence.at(index).toString()));
             }
 
+            if (tcxOptions.testFlag(GarminActivityExtension)) {
+                QDomElement tpx = doc.createElement(QLatin1String("TPX"));
+                tpx.setAttribute(QLatin1String("xmlns"),
+                    QLatin1String("http://www.garmin.com/xmlschemas/ActivityExtension/v2"));
+                trackPoint.appendChild(doc.createElement(QLatin1String("Extensions")))
+                    .appendChild(tpx);
+
+                if ((index < cadence.length()) && (cadence.at(index).toInt() >= 0) &&
+                    (!sensorOffline(samples.value(QLatin1String("speed-offline")).toList(), index))) {
+                    tpx.appendChild(doc.createElement(QLatin1String("Speed")))
+                        .appendChild(doc.createTextNode(speed.at(index).toString()));
+                }
+
+                if ((index < cadence.length()) && (cadence.at(index).toInt() >= 0) &&
+                    (!sensorOffline(samples.value(QLatin1String("cadence-offline")).toList(), index))) {
+                    const QString sensor = getTcxCadenceSensor(
+                        first(firstMap(create.value(QLatin1String("sport")))
+                                        .value(QLatin1String("value"))).toULongLong());
+                    if (!sensor.isEmpty()) {
+                        tpx.setAttribute(QLatin1String("CadenceSensor"), sensor);
+                    }
+                    if (sensor == QLatin1String("Footpod")) {
+                        tpx.appendChild(doc.createElement(QLatin1String("RunCadence")))
+                            .appendChild(doc.createTextNode(cadence.at(index).toString()));
+                    }
+                }
+            }
+
             if (trackPoint.hasChildNodes()) {
                 #if (QT_VERSION >= QT_VERSION_CHECK(5, 2, 0))
                 QDateTime trackPointTime = startTime.addMSecs(index * recordInterval);
@@ -1932,8 +2023,7 @@ QDomDocument TrainingSession::toTCX(const QString &buildTime) const
         author.appendChild(doc.createElement(QLatin1String("Name")))
             .appendChild(doc.createTextNode(QLatin1String("Bipolar")));
         tcx.appendChild(author);
-
-        /*
+/*
         {
             QDomElement build = doc.createElement(QLatin1String("Build"));
             author.appendChild(build);
@@ -1972,8 +2062,7 @@ QDomDocument TrainingSession::toTCX(const QString &buildTime) const
             #undef BIPOLAR_STRINGIFY
             #endif
         }
-        */
-
+*/
         /// @todo  Make this dynamic if/when app is localized.
         author.appendChild(doc.createElement(QLatin1String("LangID")))
             .appendChild(doc.createTextNode(QLatin1String("EN")));
@@ -2023,7 +2112,6 @@ void TrainingSession::addLapStats(QDomDocument &doc, QDomElement &lap,
     lap.appendChild(doc.createElement(QLatin1String("Intensity")))
         .appendChild(doc.createTextNode(QString::fromLatin1("Active")));
 
-    // Cadence is only available per exercise, not per lap.
     if (stats.contains(QLatin1String("cadence"))) {
         lap.appendChild(doc.createElement(QLatin1String("Cadence")))
             .appendChild(doc.createTextNode(QString::fromLatin1("%1")

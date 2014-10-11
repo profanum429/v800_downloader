@@ -333,7 +333,13 @@ QList<QString> V800usb::extract_dir_and_files(QByteArray full)
             full_state = 3;
             loc++;
             break;
-        case 3: /* now get the full string */
+        case 3: /* we need a 0x10 after the string */
+            if(full.at(loc+size) == 0x10)
+                full_state = 4;
+            else
+                full_state = 0;
+            break;
+        case 4: /* now get the full string */
             QString name(tr(QByteArray(full.constData()+loc, size)));
 
             dir_and_files.append(name);
