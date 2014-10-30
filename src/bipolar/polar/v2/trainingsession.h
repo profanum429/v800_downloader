@@ -100,6 +100,8 @@ public:
     bool writeTCX(const QString &fileName) const;
     bool writeTCX(QIODevice &device) const;
 
+    bool parsePRoute() const;
+
 protected:
     QString baseName;
     QVariantMap parsedExercises;

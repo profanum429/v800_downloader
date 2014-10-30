@@ -23,6 +23,8 @@
 #include "v800export.h"
 #include "v800fs.h"
 
+#include "trainingsession.h"
+
 #include <QtWidgets>
 
 V800Main::V800Main(QWidget *parent) :
@@ -81,7 +83,6 @@ V800Main::V800Main(QWidget *parent) :
         settings.setValue(tr("file_dir"), file_dir);
     }
 
-
     ui->setupUi(this);
     ui->verticalLayout->setAlignment(Qt::AlignTop);
     ui->verticalLayout->setSpacing(20);
@@ -118,7 +119,10 @@ void V800Main::handle_not_ready()
     failure.setIcon(QMessageBox::Critical);
     failure.exec();
 
-    exit(-1);
+    polar::v2::TrainingSession parser(tr("0000000"));
+    parser.parsePRoute();
+
+    //exit(-1);
 }
 
 void V800Main::handle_ready()
