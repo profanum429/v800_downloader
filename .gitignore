@@ -32,3 +32,4 @@ release/v800_downloader.app/Contents/Resources/v800_downloader.icns
 debug/tmp/moc_message.cpp
 debug/tmp/moc_trainingsession.cpp
 debug/tmp/moc_v800export.cpp
+debug/v800_downloader.app/Contents/Resources/v800_downloader.icns
