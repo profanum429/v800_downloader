@@ -239,54 +239,6 @@ bool TrainingSession::parse(const QString &exerciseId, const QMap<QString, QStri
         QLatin1String(name), ProtoBuf::Types::type \
     )
 
-bool TrainingSession::parsePRoute() const
-{
-    ProtoBuf::Message::FieldInfoMap fieldInfo;
-    ADD_FIELD_INFO("1",     "route_id",      EmbeddedMessage);
-    ADD_FIELD_INFO("1/1",   "value",         Uint64);
-    ADD_FIELD_INFO("2",     "name",          EmbeddedMessage);
-    ADD_FIELD_INFO("2/1",   "text",          String);
-    ADD_FIELD_INFO("3",     "length",        Float);
-    ADD_FIELD_INFO("4",     "start_location",EmbeddedMessage);
-    ADD_FIELD_INFO("4/1",   "latitude",      Double);
-    ADD_FIELD_INFO("4/2",   "longitude",     Double);
-    ADD_FIELD_INFO("4/3",   "timestamp",     EmbeddedMessage);
-    ADD_FIELD_INFO("4/3/1", "date",          EmbeddedMessage);
-    ADD_FIELD_INFO("4/3/1/1", "year",        Uint32);
-    ADD_FIELD_INFO("4/3/1/2", "month",       Uint32);
-    ADD_FIELD_INFO("4/3/1/3", "day",         Uint32);
-    ADD_FIELD_INFO("4/3/2", "time",          EmbeddedMessage);
-    ADD_FIELD_INFO("4/3/2/1", "hour",        Uint32);
-    ADD_FIELD_INFO("4/3/2/2", "min",         Uint32);
-    ADD_FIELD_INFO("4/3/2/3", "sec",         Uint32);
-    ADD_FIELD_INFO("4/3/2/4", "millis",      Uint32);
-    ADD_FIELD_INFO("4/3/3", "trusted",       Bool);
-    ADD_FIELD_INFO("4/4",   "fix",           Enumerator);
-    ADD_FIELD_INFO("4/5",   "satellites",    Uint32);
-    ADD_FIELD_INFO("5",     "start_altitude",Float);
-    ADD_FIELD_INFO("6",     "point",         EmbeddedMessage);
-    ADD_FIELD_INFO("6/1",   "x_offset",      Sint32);
-    ADD_FIELD_INFO("6/2",   "y_offset",      Sint32);
-    ADD_FIELD_INFO("6/3",   "time_offset",   Uint32);
-    ADD_FIELD_INFO("6/4",   "z_offset",      Sint32);
-    ProtoBuf::Message parser(fieldInfo);
-
-    QFile file(tr("/Users/profanum429/Downloads/proute.bpb"));
-    if (!file.open(QIODevice::ReadOnly)) {
-        qWarning() << "Failed to open proute.bpb";
-    }
-
-    QVariantMap map;
-    if (isGzipped(file)) {
-        QByteArray array = unzip(file.readAll());
-        map = parser.parse(array);
-    } else {
-        map = parser.parse(file);
-    }
-
-    return true;
-}
-
 QVariantMap TrainingSession::parseCreateExercise(QIODevice &data) const
 {
     ProtoBuf::Message::FieldInfoMap fieldInfo;
