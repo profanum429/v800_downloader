@@ -29,10 +29,11 @@
 #include "native_usb.h"
 #include "trainingsession.h"
 
-V800usb::V800usb(QObject *parent) :
+V800usb::V800usb(int device, QObject *parent) :
     QObject(parent)
 {
     usb = NULL;
+    this->device = device;
 }
 
 V800usb::~V800usb()
@@ -46,8 +47,15 @@ V800usb::~V800usb()
 
 void V800usb::start()
 {
+    int ret = -1;
     usb = new native_usb();
-    if(usb->open_usb(0x0da4, 0x0008) != -1)
+
+    if(device == V800)
+        ret = usb->open_usb(0x0da4, 0x0008);
+    else if(device == M400)
+        ret = usb->open_usb(0x0da4, 0x0008);
+
+    if(ret != -1)
     {
         get_all_sessions();
         emit ready();
@@ -123,8 +131,13 @@ void V800usb::get_all_objects(QString path)
 
 void V800usb::get_file(QString path)
 {
-    get_v800_data(path, true);
+    get_v800_data(path, 0, true);
     emit file_done();
+}
+
+void V800usb::upload_route(QString route)
+{
+    qDebug("Route file: %s", route.toLatin1().constData());
 }
 
 void V800usb::get_all_sessions()

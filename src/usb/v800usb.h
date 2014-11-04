@@ -24,13 +24,18 @@
 
 #define V800_ROOT_DIR   "/U/0"
 
+enum {
+    V800 = 0,
+    M400
+};
+
 class native_usb;
 
 class V800usb : public QObject
 {
     Q_OBJECT
 public:
-    explicit V800usb(QObject *parent = 0);
+    explicit V800usb(int device, QObject *parent = 0);
     ~V800usb();
 
 signals:
@@ -50,6 +55,8 @@ public slots:
     void get_all_objects(QString path);
     void get_file(QString path);
 
+    void upload_route(QString route);
+
 private:
     QList<QString> extract_dir_and_files(QByteArray full);
     QByteArray generate_request(QString request);
@@ -62,6 +69,8 @@ private:
     void get_all_sessions();
 
     native_usb *usb;
+
+    int device;
 };
 
 #endif // V800USB_H

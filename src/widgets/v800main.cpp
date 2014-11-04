@@ -33,31 +33,17 @@ V800Main::V800Main(QWidget *parent) :
 
     v800_ready = false;
 
-    QThread *usb_thread = new QThread;
-    usb = new V800usb();
-    usb->moveToThread(usb_thread);
-
     QThread *export_data_thread = new QThread;
     export_data = new V800export();
     export_data->moveToThread(export_data_thread);
-
-    connect(usb, SIGNAL(all_sessions(QList<QString>)), this, SLOT(handle_all_sessions(QList<QString>)));
-    connect(usb, SIGNAL(sessions_done()), this, SLOT(handle_sessions_done()));
-    connect(usb, SIGNAL(session_done(QString, int, int)), this, SLOT(handle_session_done(QString, int, int)));
-    connect(usb, SIGNAL(ready()), this, SLOT(handle_ready()));
-    connect(usb, SIGNAL(not_ready()), this, SLOT(handle_not_ready()));
 
     connect(export_data, SIGNAL(export_session_done(int,int)), this, SLOT(handle_export_session_done(int,int)));
     connect(export_data, SIGNAL(export_sessions_done()), this, SLOT(handle_export_sessions_done()));
     connect(export_data, SIGNAL(export_session_error(QString,int)), this, SLOT(handle_export_session_error(QString,int)));
 
-    connect(this, SIGNAL(get_sessions(QList<QString>)), usb, SLOT(get_sessions(QList<QString>)));
     connect(this, SIGNAL(export_sessions(QList<QString>,unsigned char)), export_data, SLOT(export_sessions(QList<QString>,unsigned char)));
 
     new QShortcut(QKeySequence(Qt::SHIFT + Qt::Key_A), this, SLOT(handle_advanced_shortcut()));
-
-    connect(usb_thread, SIGNAL(started()), usb, SLOT(start()));
-    usb_thread->start();
 
     connect(export_data_thread, SIGNAL(started()), export_data, SLOT(start()));
     export_data_thread->start();
@@ -81,7 +67,6 @@ V800Main::V800Main(QWidget *parent) :
         settings.setValue(tr("file_dir"), file_dir);
     }
 
-
     ui->setupUi(this);
     ui->verticalLayout->setAlignment(Qt::AlignTop);
     ui->verticalLayout->setSpacing(20);
@@ -89,15 +74,47 @@ V800Main::V800Main(QWidget *parent) :
     ui->exerciseTree->setHeaderLabel(tr("Session"));
 
     ui->fsBtn->setVisible(false);
+    ui->uploadBtn->setVisible(false);
 
     ui->tcxBox->setChecked(true);
 
     disable_all();
+
+    QStringList devices;
+    devices.append(tr("V800"));
+    devices.append(tr("M400"));
+
+    bool ok;
+    QString selected_device;
+    selected_device = QInputDialog::getItem(this, tr("Select Device"), tr("Device:"), devices, 0, false, &ok);
+
+    if(!ok || selected_device.isEmpty())
+        exit(-1);
+
+    QThread *usb_thread = new QThread;
+    if(selected_device == tr("V800"))
+        usb = new V800usb(V800);
+    else if(selected_device == tr("M400"))
+        usb = new V800usb(M400);
+    usb->moveToThread(usb_thread);
+
+    connect(usb, SIGNAL(all_sessions(QList<QString>)), this, SLOT(handle_all_sessions(QList<QString>)));
+    connect(usb, SIGNAL(sessions_done()), this, SLOT(handle_sessions_done()));
+    connect(usb, SIGNAL(session_done(QString, int, int)), this, SLOT(handle_session_done(QString, int, int)));
+    connect(usb, SIGNAL(ready()), this, SLOT(handle_ready()));
+    connect(usb, SIGNAL(not_ready()), this, SLOT(handle_not_ready()));
+
+    connect(this, SIGNAL(get_sessions(QList<QString>)), usb, SLOT(get_sessions(QList<QString>)));
+    connect(this, SIGNAL(upload_route(QString)), usb, SLOT(upload_route(QString)));
+
+    connect(usb_thread, SIGNAL(started()), usb, SLOT(start()));
+    usb_thread->start();
+
     this->show();
 
     start_in_progress = new QMessageBox(this);
     start_in_progress->setWindowTitle(tr("V800 Downloader"));
-    start_in_progress->setText(tr("Downloading session list from V800..."));
+    start_in_progress->setText(tr("Downloading session list from device..."));
     start_in_progress->setIcon(QMessageBox::Information);
     start_in_progress->setStandardButtons(0);
     start_in_progress->setWindowModality(Qt::WindowModal);
@@ -114,7 +131,7 @@ void V800Main::handle_not_ready()
 {
     QMessageBox failure;
     failure.setWindowTitle(tr("V800 Downloader"));
-    failure.setText(tr("Failed to open V800!"));
+    failure.setText(tr("Failed to open device!"));
     failure.setIcon(QMessageBox::Critical);
     failure.exec();
 
@@ -212,9 +229,15 @@ void V800Main::handle_export_session_error(QString session, int error)
 void V800Main::handle_advanced_shortcut()
 {
     if(ui->fsBtn->isVisible())
+    {
         ui->fsBtn->setVisible(false);
+        ui->uploadBtn->setVisible(false);
+    }
     else
+    {
         ui->fsBtn->setVisible(true);
+        ui->uploadBtn->setVisible(true);
+    }
 }
 
 void V800Main::enable_all()
@@ -223,6 +246,7 @@ void V800Main::enable_all()
     ui->checkBtn->setEnabled(true);
     ui->uncheckBtn->setEnabled(true);
     ui->fsBtn->setEnabled(true);
+    ui->uploadBtn->setEnabled(true);
     ui->dirSelectBtn->setEnabled(true);
     ui->tcxBox->setEnabled(true);
     ui->hrmBox->setEnabled(true);
@@ -235,6 +259,7 @@ void V800Main::disable_all()
     ui->checkBtn->setEnabled(false);
     ui->uncheckBtn->setEnabled(false);
     ui->fsBtn->setEnabled(false);
+    ui->uploadBtn->setEnabled(false);
     ui->dirSelectBtn->setEnabled(false);
     ui->tcxBox->setEnabled(false);
     ui->hrmBox->setEnabled(false);
@@ -329,6 +354,14 @@ void V800Main::on_fsBtn_clicked()
     V800fs *fs = new V800fs(usb);
     fs->setWindowModality(Qt::WindowModal);
     fs->show();
+}
+
+void V800Main::on_uploadBtn_clicked()
+{
+    QString route = QFileDialog::getOpenFileName(this, tr("Open Route"), QDir::homePath(), tr("Route Files (*.bpb)"));
+
+    if(!route.isEmpty())
+        emit upload_route(route);
 }
 
 void V800Main::on_dirSelectBtn_clicked()

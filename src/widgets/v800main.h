@@ -42,6 +42,7 @@ public:
 signals:
     void get_sessions(QList<QString> session);
     void export_sessions(QList<QString> sessions, unsigned char mode);
+    void upload_route(QString route);
 
 private slots:
     void handle_ready();
@@ -62,6 +63,8 @@ private slots:
     void on_fsBtn_clicked();
 
     void on_dirSelectBtn_clicked();
+
+    void on_uploadBtn_clicked();
 
 private:
     void disable_all();
