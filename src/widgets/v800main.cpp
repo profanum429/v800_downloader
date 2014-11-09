@@ -86,10 +86,13 @@ V800Main::V800Main(QWidget *parent) :
 
     bool ok;
     QString selected_device;
+    /*
     selected_device = QInputDialog::getItem(this, tr("Select Device"), tr("Device:"), devices, 0, false, &ok);
 
     if(!ok || selected_device.isEmpty())
         exit(-1);
+    */
+    selected_device = tr("V800");
 
     QThread *usb_thread = new QThread;
     if(selected_device == tr("V800"))
@@ -358,7 +361,7 @@ void V800Main::on_fsBtn_clicked()
 
 void V800Main::on_uploadBtn_clicked()
 {
-    QString route = QFileDialog::getOpenFileName(this, tr("Open Route"), QDir::homePath(), tr("Route Files (*.bpb)"));
+    QString route = QFileDialog::getExistingDirectory(this, tr("Open Route"), QDir::homePath(), QFileDialog::ShowDirsOnly);
 
     if(!route.isEmpty())
         emit upload_route(route);

@@ -66,6 +66,14 @@ private:
 
     QList<QString> get_v800_data(QString request, int multi_sport = 0, bool debug=false);
 
+    void remove_v800_dir(QString dest);
+    void put_v800_dir(QString dest);
+    void put_v800_data(QString src, QString dest);
+    QByteArray generate_directory_command(QByteArray dest, bool remove);
+    QByteArray generate_initial_command(QByteArray dest, QByteArray data);
+    QByteArray generate_next_command(QByteArray data, int packet_num);
+    int is_command_end(QByteArray packet);
+
     void get_all_sessions();
 
     native_usb *usb;
