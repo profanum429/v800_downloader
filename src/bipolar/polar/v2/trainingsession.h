@@ -1,5 +1,5 @@
 /*
-    Copyright 2014 Paul Colby
+    Copyright 2014-2015 Paul Colby
 
     This file is part of Bipolar.
 
@@ -52,8 +52,9 @@ public:
     Q_DECLARE_FLAGS(OutputFormats, OutputFormat)
 
     enum GpxOption {
-        CluetrustGpxExtension     = 0x0100,
-        GarminTrackPointExtension = 0x0200,
+        CluetrustGpxDataExtension   = 0x0100,
+        GarminAccelerationExtension = 0x0200,
+        GarminTrackPointExtension   = 0x0400,
     };
     Q_DECLARE_FLAGS(GpxOptions, GpxOption)
 
@@ -66,7 +67,7 @@ public:
     enum TcxOption {
         ForceTcxUTC = 0x0001,
         GarminActivityExtension = 0x0100,
-      //GarminCourseExtension   = 0x0200, //< Needs power support.
+        GarminCourseExtension   = 0x0200,
     };
     Q_DECLARE_FLAGS(TcxOptions, TcxOption)
 

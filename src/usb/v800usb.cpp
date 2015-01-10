@@ -197,11 +197,9 @@ void V800usb::upload_route(QString route)
 
     new_route_num = 0;
 
-    /*
     put_v800_dir(tr("/U/0/ROUTES/"));
     put_v800_dir(QString(tr("/U/0/ROUTES/%1/")).arg(new_route_num));
     put_v800_data(QString(tr("%1/PROUTE.BPB")).arg(route), QString(tr("/U/0/ROUTES/%1/PROUTE.BPB")).arg(new_route_num));
-    */
 
     remove_v800_dir(tr("/U/0/FAV"));
     put_v800_dir(tr("/U/0/FAV/"));

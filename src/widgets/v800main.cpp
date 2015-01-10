@@ -361,10 +361,12 @@ void V800Main::on_fsBtn_clicked()
 
 void V800Main::on_uploadBtn_clicked()
 {
+    /*
     QString route = QFileDialog::getExistingDirectory(this, tr("Open Route"), QDir::homePath(), QFileDialog::ShowDirsOnly);
 
     if(!route.isEmpty())
         emit upload_route(route);
+    */
 }
 
 void V800Main::on_dirSelectBtn_clicked()

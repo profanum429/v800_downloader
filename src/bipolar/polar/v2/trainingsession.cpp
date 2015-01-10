@@ -1,5 +1,5 @@
 /*
-    Copyright 2014 Paul Colby
+    Copyright 2014-2015 Paul Colby
 
     This file is part of Bipolar.
 
@@ -21,9 +21,9 @@
 
 #include "message.h"
 #include "types.h"
-
-//#include "os/versioninfo.h"
-
+/*
+#include "os/versioninfo.h"
+*/
 #include <QApplication>
 #include <QDebug>
 #include <QDir>
@@ -786,6 +786,45 @@ QVariantMap TrainingSession::parseSamples(QIODevice &data) const
     ADD_FIELD_INFO("20",    "fwd-acceleration-offline", EmbeddedMessage);
     ADD_FIELD_INFO("20/1",  "start-index",              Uint32);
     ADD_FIELD_INFO("20/2",  "stop-index",               Uint32);
+    ADD_FIELD_INFO("21",    "moving-type-offline",      EmbeddedMessage);
+    ADD_FIELD_INFO("21/1",  "start-index",              Uint32);
+    ADD_FIELD_INFO("21/2",  "stop-index",               Uint32);
+    ADD_FIELD_INFO("22",    "left-pedal-power",         EmbeddedMessage);
+    ADD_FIELD_INFO("22/1",  "current-power",            Int32);
+    ADD_FIELD_INFO("22/2",  "cumulative-revolutions",   Uint32);
+    ADD_FIELD_INFO("22/3",  "cumulative-timestamp",     Uint32);
+    ADD_FIELD_INFO("22/4",  "min-force",                Sint32);
+    ADD_FIELD_INFO("22/5",  "max-force",                Uint32);
+    ADD_FIELD_INFO("22/6",  "min-force-angle",          Uint32);
+    ADD_FIELD_INFO("22/7",  "max-force-angle",          Uint32);
+    ADD_FIELD_INFO("22/8",  "bottom-dead-spot",         Uint32);
+    ADD_FIELD_INFO("22/9",  "top-dead-spot",            Uint32);
+    ADD_FIELD_INFO("23",    "left-pedal-power-offline", EmbeddedMessage);
+    ADD_FIELD_INFO("23/1",  "start-index",              Uint32);
+    ADD_FIELD_INFO("23/2",  "stop-index",               Uint32);
+    ADD_FIELD_INFO("24",    "right-pedal-power",        EmbeddedMessage);
+    ADD_FIELD_INFO("24/1",  "current-power",            Int32);
+    ADD_FIELD_INFO("24/2",  "cumulative-revolutions",   Uint32);
+    ADD_FIELD_INFO("24/3",  "cumulative-timestamp",     Uint32);
+    ADD_FIELD_INFO("24/4",  "min-force",                Sint32);
+    ADD_FIELD_INFO("24/5",  "max-force",                Uint32);
+    ADD_FIELD_INFO("24/6",  "min-force-angle",          Uint32);
+    ADD_FIELD_INFO("24/7",  "max-force-angle",          Uint32);
+    ADD_FIELD_INFO("24/8",  "bottom-dead-spot",         Uint32);
+    ADD_FIELD_INFO("24/9",  "top-dead-spot",            Uint32);
+    ADD_FIELD_INFO("25",    "right-pedal-power-offline",EmbeddedMessage);
+    ADD_FIELD_INFO("25/1",  "start-index",              Uint32);
+    ADD_FIELD_INFO("25/2",  "stop-index",               Uint32);
+    ADD_FIELD_INFO("26",    "left-power-calibration",   EmbeddedMessage);
+    ADD_FIELD_INFO("26/1",  "start-index",              Uint32);
+    ADD_FIELD_INFO("26/2",  "value",                    Float);
+    ADD_FIELD_INFO("26/3",  "operation",                Enumerator);
+    ADD_FIELD_INFO("26/4",  "cause",                    Enumerator);
+    ADD_FIELD_INFO("27",    "right-power-calibration",  EmbeddedMessage);
+    ADD_FIELD_INFO("27/1",  "start-index",              Uint32);
+    ADD_FIELD_INFO("27/2",  "value",                    Float);
+    ADD_FIELD_INFO("27/3",  "operation",                Enumerator);
+    ADD_FIELD_INFO("27/4",  "cause",                    Enumerator);
     ProtoBuf::Message parser(fieldInfo);
 
     if (isGzipped(data)) {
@@ -1240,6 +1279,18 @@ QDomDocument TrainingSession::toGPX(const QDateTime &creationTime) const
     gpx.setAttribute(QLatin1String("xsi:schemaLocation"),
                      QLatin1String("http://www.topografix.com/GPX/1/1 "
                                    "http://www.topografix.com/GPX/1/1/gpx.xsd"));
+    if (gpxOptions.testFlag(CluetrustGpxDataExtension)) {
+        gpx.setAttribute(QLatin1String("xmlns:gpxdata"),
+                         QLatin1String("http://www.cluetrust.com/XML/GPXDATA/1/0"));
+    }
+    if (gpxOptions.testFlag(GarminAccelerationExtension)) {
+        gpx.setAttribute(QLatin1String("xmlns:gpxax"),
+                         QLatin1String("http://www.garmin.com/xmlschemas/AccelerationExtension/v1"));
+    }
+    if (gpxOptions.testFlag(GarminTrackPointExtension)) {
+        gpx.setAttribute(QLatin1String("xmlns:gpxtpx"),
+                         QLatin1String("http://www.garmin.com/xmlschemas/TrackPointExtension/v1"));
+    }
     doc.appendChild(gpx);
 
     QDomElement metaData = doc.createElement(QLatin1String("metadata"));
@@ -1276,7 +1327,15 @@ QDomDocument TrainingSession::toGPX(const QDateTime &creationTime) const
             const QDateTime startTime = getDateTime(firstMap(
                 route.value(QLatin1String("timestamp"))));
 
-            // Get the number of samples.
+            // Get the "samples" samples.
+            const QVariantMap samples = map.value(SAMPLES).toMap();
+            const QVariantList cadence             = samples.value(QLatin1String("cadence")).toList();
+            const QVariantList distance            = samples.value(QLatin1String("distance")).toList();
+            const QVariantList forwardAcceleration = samples.value(QLatin1String("fwd-acceleration")).toList();
+            const QVariantList heartrate           = samples.value(QLatin1String("heartrate")).toList();
+            const QVariantList temperature         = samples.value(QLatin1String("temperature")).toList();
+
+            // Get the "route" samples.
             const QVariantList altitude   = route.value(QLatin1String("altitude")).toList();
             const QVariantList duration   = route.value(QLatin1String("duration")).toList();
             const QVariantList latitude   = route.value(QLatin1String("latitude")).toList();
@@ -1328,6 +1387,93 @@ QDomDocument TrainingSession::toGPX(const QDateTime &creationTime) const
                         timeOffset).toString(Qt::ISODate)));
                 trkpt.appendChild(doc.createElement(QLatin1String("sat")))
                     .appendChild(doc.createTextNode(satellites.at(index).toString()));
+
+                if (gpxOptions.testFlag(CluetrustGpxDataExtension)   ||
+                    gpxOptions.testFlag(GarminAccelerationExtension) ||
+                    gpxOptions.testFlag(GarminTrackPointExtension))
+                {
+                    QDomElement extensions = doc.createElement(QLatin1String("extensions"));
+
+                    if (gpxOptions.testFlag(CluetrustGpxDataExtension)) {
+                        if ((index < heartrate.length()) &&
+                            (!sensorOffline(samples.value(QLatin1String("heartrate-offline")).toList(), index))) {
+                            extensions.appendChild(doc.createElement(QLatin1String("gpxdata:hr")))
+                                .appendChild(doc.createTextNode(QString::fromLatin1("%1")
+                                    .arg(heartrate.at(index).toUInt())));
+                        }
+
+                        if ((index < cadence.length()) &&
+                            (!sensorOffline(samples.value(QLatin1String("altitude-offline")).toList(), index))) {
+                            extensions.appendChild(doc.createElement(QLatin1String("gpxdata:cadence")))
+                                .appendChild(doc.createTextNode(QString::fromLatin1("%1")
+                                    .arg(cadence.at(index).toUInt())));
+                        }
+
+                        if (index < temperature.length()) {
+                            extensions.appendChild(doc.createElement(QLatin1String("gpxdata:temp")))
+                                .appendChild(doc.createTextNode(QString::fromLatin1("%1")
+                                    .arg(temperature.at(index).toFloat())));
+                        }
+
+                        if ((index < distance.length()) &&
+                            (!sensorOffline(samples.value(QLatin1String("distance-offline")).toList(), index))) {
+                            /// @todo  Include optional gpxdata:sensor="wheel|pedometer" attribute.
+                            extensions.appendChild(doc.createElement(QLatin1String("gpxdata:distance")))
+                                .appendChild(doc.createTextNode(QString::fromLatin1("%1")
+                                    .arg(distance.at(index).toUInt())));
+                        }
+                    }
+
+                    if (gpxOptions.testFlag(GarminAccelerationExtension)) {
+                        QDomElement accelerationExtension = doc.createElement(
+                            QLatin1String("gpxax:AccelerationExtension"));
+
+                        if ((index < forwardAcceleration.length()) &&
+                            (!sensorOffline(samples.value(QLatin1String("fwd-acceleration-offline")).toList(), index))) {
+                            QDomElement accel = doc.createElement(QLatin1String("gpxax:accel"));
+                            accel.setAttribute(QLatin1String("x"), QString::fromLatin1("%1")
+                                .arg(forwardAcceleration.at(index).toFloat()));
+                            accel.setAttribute(QLatin1String("y"), QLatin1String("0"));
+                            accel.setAttribute(QLatin1String("z"), QLatin1String("0"));
+                            accelerationExtension.appendChild(accel);
+                        }
+
+                        extensions.appendChild(accelerationExtension);
+                    }
+
+                    if (gpxOptions.testFlag(GarminTrackPointExtension)) {
+                        QDomElement trackPointExtension = doc.createElement(
+                            QLatin1String("gpxtpx:TrackPointExtension"));
+
+                        if (index < temperature.length()) {
+                            trackPointExtension.appendChild(doc.createElement(QLatin1String("gpxtpx:atemp")))
+                                .appendChild(doc.createTextNode(QString::fromLatin1("%1")
+                                    .arg(temperature.at(index).toFloat())));
+                        }
+
+                        if ((index < heartrate.length()) &&
+                            (!sensorOffline(samples.value(QLatin1String("heartrate-offline")).toList(), index))) {
+                            const uint hr = heartrate.at(index).toUInt();
+                            if ((hr >= 1) && (hr <= 255)) { // Schema enforced.
+                                trackPointExtension.appendChild(doc.createElement(QLatin1String("gpxtpx:hr")))
+                                    .appendChild(doc.createTextNode(QString::fromLatin1("%1").arg(hr)));
+                            }
+                        }
+
+                        if ((index < cadence.length()) &&
+                            (!sensorOffline(samples.value(QLatin1String("altitude-offline")).toList(), index))) {
+                            const uint cad = cadence.at(index).toUInt();
+                            if (cad <= 254) { // Schema enforced.
+                            trackPointExtension.appendChild(doc.createElement(QLatin1String("gpxtpx:cad")))
+                                .appendChild(doc.createTextNode(QString::fromLatin1("%1").arg(cad)));
+                            }
+                        }
+
+                        extensions.appendChild(trackPointExtension);
+                    }
+
+                    trkpt.appendChild(extensions);
+                }
                 trkseg.appendChild(trkpt);
             }
         }
@@ -1351,9 +1497,13 @@ QStringList TrainingSession::toHRM(const bool rrDataOnly) const
 
         const QVariantList rrsamples  = map.value(RRSAMPLES).toMap().value(QLatin1String("value")).toList();
 
-        const bool haveAltitude = ((!rrDataOnly) && (haveAnySamples(samples, QLatin1String("speed"))));
-        const bool haveCadence  = ((!rrDataOnly) && (haveAnySamples(samples, QLatin1String("cadence"))));
-        const bool haveSpeed    = ((!rrDataOnly) && (haveAnySamples(samples, QLatin1String("altitude"))));
+        const bool haveAltitude     = ((!rrDataOnly) && (haveAnySamples(samples, QLatin1String("speed"))));
+        const bool haveCadence      = ((!rrDataOnly) && (haveAnySamples(samples, QLatin1String("cadence"))));
+        const bool havePowerLeft    = ((!rrDataOnly) && (haveAnySamples(samples, QLatin1String("left-pedal-power"))));
+        const bool havePowerRight   = ((!rrDataOnly) && (haveAnySamples(samples, QLatin1String("right-pedal-power"))));
+        const bool havePower        = (havePowerLeft || havePowerRight);
+        const bool havePowerBalance = (havePowerLeft && havePowerRight);
+        const bool haveSpeed        = ((!rrDataOnly) && (haveAnySamples(samples, QLatin1String("altitude"))));
 
         QString hrmData;
         QTextStream stream(&hrmData);
@@ -1364,13 +1514,13 @@ QStringList TrainingSession::toHRM(const bool rrDataOnly) const
             "Version=106\r\n"
             "Monitor=1\r\n"
             "SMode=";
-        stream << (haveSpeed    ? '1' : '0'); // a) Speed
-        stream << (haveCadence  ? '1' : '0'); // b) Cadence
-        stream << (haveAltitude ? '1' : '0'); // c) Altitude
+        stream << (haveSpeed        ? '1' : '0'); // a) Speed
+        stream << (haveCadence      ? '1' : '0'); // b) Cadence
+        stream << (haveAltitude     ? '1' : '0'); // c) Altitude
+        stream << (havePower        ? '1' : '0'); // d) Power
+        stream << (havePowerBalance ? '1' : '0'); // e) Power Left Right Balance
         stream <<
-            "0" // d) Power (not supported by V800 yet).
-            "0" // e) Power Left Right Ballance (not supported by V800 yet).
-            "0" // f) Power Pedalling Index (not supported by V800 yet).
+            "0" // f) Power Pedalling Index (does not appear to be supported by FlowSync).
             "0" // g) HR/CC data (available only with Polar XTrainer Plus).
             "0" // h) US / Euro unit (always metric).
             "0" // i) Air pressure (not available).
@@ -1506,7 +1656,7 @@ QStringList TrainingSession::toHRM(const bool rrDataOnly) const
                 stream << '\t' << first(hrStats.value(QLatin1String("maximum"))).toUInt();
                 stream << "\r\n";
                 // Row 2
-                stream << "28";
+                stream << "28"; // All three "extra data" fields present (on row 3).
                 stream << "\t0"; // Recovery time (seconds); data not available.
                 stream << "\t0"; // Recovery HR (bpm); data not available.
                 stream << "\t" << qRound(first(firstMap(stats.value(QLatin1String("speed")))
@@ -1515,8 +1665,14 @@ QStringList TrainingSession::toHRM(const bool rrDataOnly) const
                     .value(QLatin1String("maximum"))).toUInt();
                 stream << "\t0"; // Momentary altitude; not available per lap.
                 stream << "\r\n";
-                // Row 3
-                stream << qRound(first(header.value(QLatin1String("descent"))).toFloat() * 10.0);
+                // Row 3: HRM allows up to three "extra data" fields. Here we
+                // choose to leave out descent if power is available.
+                if (havePower) {
+                    stream << first(firstMap(header.value(QLatin1String("power")))
+                        .value(QLatin1String("average"))).toUInt() * 10;
+                } else {
+                    stream << qRound(first(header.value(QLatin1String("descent"))).toFloat() * 10.0);
+                }
                 stream << '\t' << (first(firstMap(stats.value(QLatin1String("pedaling")))
                     .value(QLatin1String("average"))).toUInt() * 10);
                 stream << '\t' << qRound(first(firstMap(stats.value(QLatin1String("incline")))
@@ -1568,7 +1724,11 @@ QStringList TrainingSession::toHRM(const bool rrDataOnly) const
         // all multiplied by 10, to extra data can hold 0..300 units.
         if (!laps.isEmpty()) {
             stream << "\r\n[ExtraData]\r\n";
-            stream << "Descent\r\nMeters\t1000\t0\r\n";
+            if (havePower) {
+                stream << "Power\r\nW\t3000\t0\r\n";
+            } else {
+                stream << "Descent\r\nMeters\t1000\t0\r\n";
+            }
             stream << "Pedaling Index\r\n%\t100\t0\r\n";
             stream << "Max Incline\r\nDegrees\t90\t0\r\n";
         }
@@ -1663,15 +1823,17 @@ QStringList TrainingSession::toHRM(const bool rrDataOnly) const
                 stream << sample.toUInt() << "\r\n";
             }
         } else {
-            const QVariantList altitude = samples.value(QLatin1String("altitude")).toList();
-            const QVariantList cadence  = samples.value(QLatin1String("cadence")).toList();
-            const QVariantList speed    = samples.value(QLatin1String("speed")).toList();
+            const QVariantList altitude   = samples.value(QLatin1String("altitude")).toList();
+            const QVariantList cadence    = samples.value(QLatin1String("cadence")).toList();
+            const QVariantList speed      = samples.value(QLatin1String("speed")).toList();
+            const QVariantList powerLeft  = samples.value(QLatin1String("left-pedal-power")).toList();
+            const QVariantList powerRight = samples.value(QLatin1String("right-pedal-power")).toList();
             for (int index = 0; index < heartrate.length(); ++index) {
                 stream << ((index < heartrate.length())
                     ? heartrate.at(index).toUInt() : (uint)0);
                 if (haveSpeed) {
                     stream << '\t' << ((index < speed.length())
-                        ? qRound(speed.at(index).toFloat() * 10.0) : ( int)0);
+                        ? qRound(speed.at(index).toFloat() * 10.0) : (int)0);
                 }
                 if (haveCadence) {
                     stream << '\t' << ((index < cadence.length())
@@ -1679,10 +1841,26 @@ QStringList TrainingSession::toHRM(const bool rrDataOnly) const
                 }
                 if (haveAltitude) {
                     stream << '\t' << ((index < altitude.length())
-                        ? qRound(altitude.at(index).toFloat()) : ( int)0);
+                        ? qRound(altitude.at(index).toFloat()) : (int)0);
                 }
-                // Power (Watts) - not yet supported by Polar.
-                // Power Balance and Pedalling Index - not yet supported by Polar.
+                if (havePower) {
+                    const int currentPowerLeft = (index < powerLeft.length()) ?
+                        first(powerLeft.at(index).toMap().value(QLatin1String("current-power"))).toInt() : 0;
+                    const int currentPowerRight = (index < powerRight.length()) ?
+                        first(powerRight.at(index).toMap().value(QLatin1String("current-power"))).toInt() : 0;
+                    const int currentPower = currentPowerLeft + currentPowerRight;
+                    stream << '\t' << currentPower;
+                    if (havePowerBalance) {
+                        // Convert the left and right powers into a left-right balance percentage.
+                        const int leftBalance = (currentPower == 0) ? 0 :
+                            qRound(100.0 * (float)currentPowerLeft / (float)currentPower);
+                        if (leftBalance > 100) {
+                            qWarning() << "leftBalance of " << leftBalance << "% is greater than 100%";
+                        }
+                        /// @todo Include Pedalling Index here, if/when available.
+                        stream << '\t' << qMax(qMin(leftBalance, 255), 0);
+                    }
+                }
                 // Air pressure - not available in protobuf data.
                 stream << "\r\n";
             }
@@ -1707,8 +1885,6 @@ QStringList TrainingSession::toHRM(const bool rrDataOnly) const
  */
 QDomDocument TrainingSession::toTCX(const QString &buildTime) const
 {
-    Q_UNUSED(buildTime);
-
     QDomDocument doc;
     doc.appendChild(doc.createProcessingInstruction(QLatin1String("xml"),
         QLatin1String("version='1.0' encoding='utf-8'")));
@@ -1724,6 +1900,10 @@ QDomDocument TrainingSession::toTCX(const QString &buildTime) const
     if (tcxOptions.testFlag(GarminActivityExtension)) {
         tcx.setAttribute(QLatin1String("xmlns:ax2"),
                          QLatin1String("http://www.garmin.com/xmlschemas/ActivityExtension/v2"));
+    }
+    if (tcxOptions.testFlag(GarminCourseExtension)) {
+        tcx.setAttribute(QLatin1String("xmlns:cx1"),
+                         QLatin1String("http://www.garmin.com/xmlschemas/CourseExtension/v1"));
     }
     doc.appendChild(tcx);
 
@@ -1756,6 +1936,8 @@ QDomDocument TrainingSession::toTCX(const QString &buildTime) const
         // Get the "samples" samples.
         const QVariantList altitude    = samples.value(QLatin1String("altitude")).toList();
         const QVariantList cadence     = samples.value(QLatin1String("cadence")).toList();
+        const QVariantList powerLeft   = samples.value(QLatin1String("left-pedal-power")).toList();
+        const QVariantList powerRight  = samples.value(QLatin1String("right-pedal-power")).toList();
         const QVariantList distance    = samples.value(QLatin1String("distance")).toList();
         const QVariantList heartrate   = samples.value(QLatin1String("heartrate")).toList();
         const QVariantList speed       = samples.value(QLatin1String("speed")).toList();
@@ -1886,7 +2068,9 @@ QDomDocument TrainingSession::toTCX(const QString &buildTime) const
                 lap.appendChild(track);
 
                 // Add any enabled extensions.
-                if (tcxOptions.testFlag(GarminActivityExtension)) {
+                if (tcxOptions.testFlag(GarminActivityExtension) ||
+                    tcxOptions.testFlag(GarminCourseExtension))
+                {
                     QDomElement extensions = doc.createElement(QLatin1String("Extensions"));
                     lap.appendChild(extensions);
 
@@ -1927,7 +2111,37 @@ QDomDocument TrainingSession::toTCX(const QString &buildTime) const
                                         .arg(first(cadence.value(QLatin1String("maximum"))).toUInt())));
                             }
 
-                            /// @todo AvgWatts and MaxWatts when power data is available.
+                            /// @todo Steps
+
+                            // Note, AvgWatts is defined by both the Garmin Activity
+                            // Extension and the Garmin Course Extension schemas.
+                            const QVariantMap power = firstMap(base.value(QLatin1String("power")));
+                            if (power.contains(QLatin1String("average"))) {
+                                lx.appendChild(doc.createElement(QLatin1String("AvgWatts")))
+                                    .appendChild(doc.createTextNode(QString::fromLatin1("%1")
+                                        .arg(first(power.value(QLatin1String("average"))).toUInt())));
+                            }
+                            if (power.contains(QLatin1String("maximum"))) {
+                                lx.appendChild(doc.createElement(QLatin1String("MaxWatts")))
+                                    .appendChild(doc.createTextNode(QString::fromLatin1("%1")
+                                        .arg(first(power.value(QLatin1String("maximum"))).toUInt())));
+                            }
+                        }
+
+                        if (tcxOptions.testFlag(GarminCourseExtension)) {
+                            QDomElement cx = doc.createElement(QLatin1String("CX"));
+                            cx.setAttribute(QLatin1String("xmlns"),
+                                QLatin1String("http://www.garmin.com/xmlschemas/CourseExtension/v1"));
+                            extensions.appendChild(cx);
+
+                            // Note, AvgWatts is defined by both the Garmin Activity
+                            // Extension and the Garmin Course Extension schemas.
+                            const QVariantMap power = firstMap(base.value(QLatin1String("power")));
+                            if (power.contains(QLatin1String("average"))) {
+                                cx.appendChild(doc.createElement(QLatin1String("AvgWatts")))
+                                    .appendChild(doc.createTextNode(QString::fromLatin1("%1")
+                                        .arg(first(power.value(QLatin1String("average"))).toUInt())));
+                            }
                         }
                     }
                 }
@@ -1991,6 +2205,17 @@ QDomDocument TrainingSession::toTCX(const QString &buildTime) const
                         tpx.appendChild(doc.createElement(QLatin1String("RunCadence")))
                             .appendChild(doc.createTextNode(cadence.at(index).toString()));
                     }
+                }
+
+                const int currentPowerLeft = (index < powerLeft.length()) ?
+                    first(powerLeft.at(index).toMap().value(QLatin1String("current-power"))).toInt() : 0;
+                const int currentPowerRight = (index < powerRight.length()) ?
+                    first(powerRight.at(index).toMap().value(QLatin1String("current-power"))).toInt() : 0;
+                const int currentPower = currentPowerLeft + currentPowerRight;
+                if (currentPower != 0) {
+                    tpx.appendChild(doc.createElement(QLatin1String("Watts")))
+                        .appendChild(doc.createTextNode(QString::fromLatin1("%1")
+                            .arg(currentPower)));
                 }
             }
 
