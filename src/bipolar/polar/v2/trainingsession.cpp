@@ -37,6 +37,29 @@
 #include <zlib.h>
 #endif
 
+// As of Qt 5.5 increased the accuracy of QVariant::toString output for
+// doubles and floats (see qtproject/qtbase@8153386).  Here replicate
+// that behaviour for pre-5.5 for a) better accuracy in older Qt versions
+// and b) consistent output (eg in unit tests) across all Qt 5.x versions.
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 5, 0))
+    #define VARIANT_TO_STRING(v) v.toString()
+#else // Fallback implementation based closely on Qt 5.5's qvariant.h
+    #ifndef DBL_MANT_DIG
+    #define DBL_MANT_DIG  53
+    #endif
+    #ifndef FLT_MANT_DIG
+    #define FLT_MANT_DIG  24
+    #endif
+    #define DBL_MAX_DIGITS10 (DBL_MANT_DIG * 30103) / 100000 + 2
+    #define FLT_MAX_DIGITS10 (FLT_MANT_DIG * 30103) / 100000 + 2
+    #define VARIANT_TO_STRING(v) \
+        (static_cast<QMetaType::Type>(v.type()) == QMetaType::Double)      \
+            ? QString::number(v.toDouble(), 'g', DBL_MAX_DIGITS10)         \
+            : (static_cast<QMetaType::Type>(v.type()) == QMetaType::Float) \
+                ? QString::number(v.toFloat(), 'g', FLT_MAX_DIGITS10)      \
+                : v.toString()
+#endif
+
 // These constants match those used by Polar's V2 API.
 #define AUTOLAPS   QLatin1String("autolaps")
 #define CREATE     QLatin1String("create")
@@ -101,19 +124,23 @@ QString TrainingSession::getTcxSport(const quint64 &polarSportValue)
         map.insert(18, TCX_BIKING);  // Indoor cycling
         map.insert(19, TCX_RUNNING); // Road running
         map.insert(20, TCX_OTHER);   // Circuit training
+      //map.insert(21, TCX_
         map.insert(22, TCX_OTHER);   // Snowboarding
         map.insert(23, TCX_OTHER);   // Swimming
         map.insert(24, TCX_OTHER);   // Freestyle XC skiing
         map.insert(25, TCX_OTHER);   // Classic XC skiing
+      //map.insert(26, TCX_
         map.insert(27, TCX_RUNNING); // Trail running
         map.insert(28, TCX_OTHER);   // Ice skating
         map.insert(29, TCX_OTHER);   // Inline skating
         map.insert(30, TCX_OTHER);   // Roller skating
+      //map.insert(31, TCX_
         map.insert(32, TCX_OTHER);   // Group exercise
         map.insert(33, TCX_OTHER);   // Yoga
         map.insert(34, TCX_OTHER);   // Crossfit
         map.insert(35, TCX_OTHER);   // Golf
         map.insert(36, TCX_RUNNING); // Track&field running
+      //map.insert(37, TCX_
         map.insert(38, TCX_BIKING);  // Road biking
         map.insert(39, TCX_OTHER);   // Soccer
         map.insert(40, TCX_OTHER);   // Cricket
@@ -148,8 +175,61 @@ QString TrainingSession::getTcxSport(const quint64 &polarSportValue)
         map.insert(69, TCX_OTHER);   // Duathlon
         map.insert(70, TCX_OTHER);   // Off-road triathlon
         map.insert(71, TCX_OTHER);   // Off-road duathlon
+      //map.insert(72, TCX_
+      //map.insert(73, TCX_
+      //map.insert(74, TCX_
+      //map.insert(75, TCX_
+      //map.insert(76, TCX_
+      //map.insert(77, TCX_
+      //map.insert(78, TCX_
+      //map.insert(79, TCX_
+      //map.insert(80, TCX_
+      //map.insert(81, TCX_
         map.insert(82, TCX_OTHER);   // Multisport
         map.insert(83, TCX_OTHER);   // Other indoor
+        map.insert(84, TCX_OTHER);   // Orienteering
+        map.insert(85, TCX_OTHER);   // Ski orienteering
+        map.insert(86, TCX_BIKING);  // Mountain bike orienteering
+        map.insert(87, TCX_OTHER);   // Biathlon
+        map.insert(88, TCX_OTHER);   // Sailing
+        map.insert(89, TCX_OTHER);   // Wheelchair racing
+        map.insert(90, TCX_OTHER);   // Disc golf
+        map.insert(91, TCX_OTHER);   // Table tennis
+        map.insert(92, TCX_RUNNING); // Ultra running
+        map.insert(94, TCX_OTHER);   // Climbing (indoor)
+      //map.insert(93, TCX_
+        map.insert(95, TCX_OTHER);   // Kayaking
+        map.insert(96, TCX_OTHER);   // Canoeing
+      //map.insert(97, TCX_
+      //map.insert(98, TCX_
+      //map.insert(99, TCX_
+        map.insert(100, TCX_OTHER);  // Kitesurfing
+        map.insert(101, TCX_OTHER);  // Windsurfing
+        map.insert(102, TCX_OTHER);  // Surfing
+        map.insert(103, TCX_OTHER);  // Pool swimming
+        map.insert(104, TCX_OTHER);  // Finnish baseball
+        map.insert(105, TCX_OTHER);  // Open water swimming
+      //map.insert(106, TCX
+        map.insert(107, TCX_OTHER);  // Wakeboarding
+        map.insert(108, TCX_OTHER);  // Water skiing
+        map.insert(109, TCX_OTHER);  // Boxing
+        map.insert(110, TCX_OTHER);  // Kickboxing
+      //map.insert(111, TCX
+        map.insert(112, TCX_OTHER);  // Telemark skiing
+        map.insert(113, TCX_OTHER);  // Backcountry skiing
+        map.insert(114, TCX_OTHER);  // Gymnastics
+        map.insert(115, TCX_OTHER);  // Judo
+        map.insert(116, TCX_OTHER);  // Snowshoe trekking
+        map.insert(117, TCX_OTHER);  // Indoor rowing
+        map.insert(118, TCX_BIKING); // Spinning
+        map.insert(119, TCX_OTHER);  // Street
+        map.insert(120, TCX_OTHER);  // Latin
+        map.insert(121, TCX_OTHER);  // Show
+        map.insert(122, TCX_OTHER);  // Ballet
+        map.insert(123, TCX_OTHER);  // Jazz
+        map.insert(124, TCX_OTHER);  // Modern
+        map.insert(125, TCX_OTHER);  // Ballroom
+        map.insert(126, TCX_OTHER);  // Core
     }
     QMap<quint64, QString>::ConstIterator iter = map.constFind(polarSportValue);
     if (iter == map.constEnd()) {
@@ -357,7 +437,7 @@ QVariantMap TrainingSession::parseCreateSession(QIODevice &data) const
     ADD_FIELD_INFO("5/4",    "milliseconds",       Uint32);
     ADD_FIELD_INFO("6",      "distance",           Float);
     ADD_FIELD_INFO("7",      "calories",           Uint32);
-    ADD_FIELD_INFO("8",      "heartreat",          EmbeddedMessage);
+    ADD_FIELD_INFO("8",      "heartrate",          EmbeddedMessage);
     ADD_FIELD_INFO("8/1",    "average",            Uint32);
     ADD_FIELD_INFO("8/2",    "maximum",            Uint32);
     ADD_FIELD_INFO("9",      "heartrate-duration", EmbeddedMessage);
@@ -1364,7 +1444,11 @@ QDomDocument TrainingSession::toGPX(const QDateTime &creationTime) const
                     splits.append(splitTime);
                 }
             }
+            #if defined Q_CC_MSVC && defined Q_OS_WIN64 && (QT_VERSION <= QT_VERSION_CHECK(5, 4, 0))
+            qSort(splits); // QTBUG-41092
+            #else
             std::sort(splits.begin(), splits.end());
+            #endif
 
             // Add trkseg elements containing the actual GPS data.
             QDomElement trkseg = doc.createElement(QLatin1String("trkseg"));
@@ -1381,12 +1465,12 @@ QDomDocument TrainingSession::toGPX(const QDateTime &creationTime) const
                 trkpt.setAttribute(QLatin1String("lat"), latitude.at(index).toDouble());
                 trkpt.setAttribute(QLatin1String("lon"), longitude.at(index).toDouble());
                 trkpt.appendChild(doc.createElement(QLatin1String("ele")))
-                    .appendChild(doc.createTextNode(altitude.at(index).toString()));
+                    .appendChild(doc.createTextNode(VARIANT_TO_STRING(altitude.at(index))));
                 trkpt.appendChild(doc.createElement(QLatin1String("time")))
                     .appendChild(doc.createTextNode(startTime.addMSecs(
                         timeOffset).toString(Qt::ISODate)));
                 trkpt.appendChild(doc.createElement(QLatin1String("sat")))
-                    .appendChild(doc.createTextNode(satellites.at(index).toString()));
+                    .appendChild(doc.createTextNode(VARIANT_TO_STRING(satellites.at(index))));
 
                 if (gpxOptions.testFlag(CluetrustGpxDataExtension)   ||
                     gpxOptions.testFlag(GarminAccelerationExtension) ||
@@ -1502,7 +1586,7 @@ QStringList TrainingSession::toHRM(const bool rrDataOnly) const
         const bool havePowerLeft    = ((!rrDataOnly) && (haveAnySamples(samples, QLatin1String("left-pedal-power"))));
         const bool havePowerRight   = ((!rrDataOnly) && (haveAnySamples(samples, QLatin1String("right-pedal-power"))));
         const bool havePower        = (havePowerLeft || havePowerRight);
-        const bool havePowerBalance = (havePowerLeft && havePowerRight);
+        const bool havePowerBalance = havePower;
         const bool haveSpeed        = ((!rrDataOnly) && (haveAnySamples(samples, QLatin1String("altitude"))));
 
         QString hrmData;
@@ -1519,8 +1603,11 @@ QStringList TrainingSession::toHRM(const bool rrDataOnly) const
         stream << (haveAltitude     ? '1' : '0'); // c) Altitude
         stream << (havePower        ? '1' : '0'); // d) Power
         stream << (havePowerBalance ? '1' : '0'); // e) Power Left Right Balance
+        // Note, we're forcing Power Pedalling Index on when we have power data,
+        // even though we have no such pedalling index data. This is for PPT5's
+        // benefit.  See issue #57 - https://github.com/pcolby/bipolar/issues/57
+        stream << (havePowerBalance ? '1' : '0'); // f) Power Pedalling Index
         stream <<
-            "0" // f) Power Pedalling Index (does not appear to be supported by FlowSync).
             "0" // g) HR/CC data (available only with Polar XTrainer Plus).
             "0" // h) US / Euro unit (always metric).
             "0" // i) Air pressure (not available).
@@ -1848,12 +1935,16 @@ QStringList TrainingSession::toHRM(const bool rrDataOnly) const
                         first(powerLeft.at(index).toMap().value(QLatin1String("current-power"))).toInt() : 0;
                     const int currentPowerRight = (index < powerRight.length()) ?
                         first(powerRight.at(index).toMap().value(QLatin1String("current-power"))).toInt() : 0;
-                    const int currentPower = currentPowerLeft + currentPowerRight;
+                    const int currentPower = (havePowerLeft && havePowerRight)
+                        ? currentPowerLeft + currentPowerRight
+                        : (havePowerLeft ? currentPowerLeft : currentPowerRight) * 2;
                     stream << '\t' << currentPower;
                     if (havePowerBalance) {
+                        // In case we only have right power, not left.
+                        const int powerLeft = havePowerLeft ? currentPowerLeft : currentPower - currentPowerRight;
                         // Convert the left and right powers into a left-right balance percentage.
                         const int leftBalance = (currentPower == 0) ? 0 :
-                            qRound(100.0 * (float)currentPowerLeft / (float)currentPower);
+                            qRound(100.0 * (float)powerLeft / (float)currentPower);
                         if (leftBalance > 100) {
                             qWarning() << "leftBalance of " << leftBalance << "% is greater than 100%";
                         }
@@ -2152,32 +2243,32 @@ QDomDocument TrainingSession::toTCX(const QString &buildTime) const
             if ((index < latitude.length()) && (index < longitude.length())) {
                 QDomElement position = doc.createElement(QLatin1String("Position"));
                 position.appendChild(doc.createElement(QLatin1String("LatitudeDegrees")))
-                    .appendChild(doc.createTextNode(latitude.at(index).toString()));
+                    .appendChild(doc.createTextNode(VARIANT_TO_STRING(latitude.at(index))));
                 position.appendChild(doc.createElement(QLatin1String("LongitudeDegrees")))
-                    .appendChild(doc.createTextNode(longitude.at(index).toString()));
+                    .appendChild(doc.createTextNode(VARIANT_TO_STRING(longitude.at(index))));
                 trackPoint.appendChild(position);
             }
 
             if ((index < altitude.length()) &&
                 (!sensorOffline(samples.value(QLatin1String("altitude-offline")).toList(), index))) {
                 trackPoint.appendChild(doc.createElement(QLatin1String("AltitudeMeters")))
-                    .appendChild(doc.createTextNode(altitude.at(index).toString()));
+                    .appendChild(doc.createTextNode(VARIANT_TO_STRING(altitude.at(index))));
             }
             if ((index < distance.length()) &&
                 (!sensorOffline(samples.value(QLatin1String("distance-offline")).toList(), index))) {
                 trackPoint.appendChild(doc.createElement(QLatin1String("DistanceMeters")))
-                    .appendChild(doc.createTextNode(distance.at(index).toString()));
+                    .appendChild(doc.createTextNode(VARIANT_TO_STRING(distance.at(index))));
             }
             if ((index < heartrate.length()) && (heartrate.at(index).toInt() > 0) &&
                 (!sensorOffline(samples.value(QLatin1String("heartrate-offline")).toList(), index))) {
                 trackPoint.appendChild(doc.createElement(QLatin1String("HeartRateBpm")))
                     .appendChild(doc.createElement(QLatin1String("Value")))
-                    .appendChild(doc.createTextNode(heartrate.at(index).toString()));
+                    .appendChild(doc.createTextNode(VARIANT_TO_STRING(heartrate.at(index))));
             }
             if ((index < cadence.length()) && (cadence.at(index).toInt() >= 0) &&
                 (!sensorOffline(samples.value(QLatin1String("cadence-offline")).toList(), index))) {
                 trackPoint.appendChild(doc.createElement(QLatin1String("Cadence")))
-                    .appendChild(doc.createTextNode(cadence.at(index).toString()));
+                    .appendChild(doc.createTextNode(VARIANT_TO_STRING(cadence.at(index))));
             }
 
             if (tcxOptions.testFlag(GarminActivityExtension)) {
@@ -2190,7 +2281,7 @@ QDomDocument TrainingSession::toTCX(const QString &buildTime) const
                 if ((index < cadence.length()) && (cadence.at(index).toInt() >= 0) &&
                     (!sensorOffline(samples.value(QLatin1String("speed-offline")).toList(), index))) {
                     tpx.appendChild(doc.createElement(QLatin1String("Speed")))
-                        .appendChild(doc.createTextNode(speed.at(index).toString()));
+                        .appendChild(doc.createTextNode(VARIANT_TO_STRING(speed.at(index))));
                 }
 
                 if ((index < cadence.length()) && (cadence.at(index).toInt() >= 0) &&
@@ -2203,20 +2294,28 @@ QDomDocument TrainingSession::toTCX(const QString &buildTime) const
                     }
                     if (sensor == QLatin1String("Footpod")) {
                         tpx.appendChild(doc.createElement(QLatin1String("RunCadence")))
-                            .appendChild(doc.createTextNode(cadence.at(index).toString()));
+                            .appendChild(doc.createTextNode(VARIANT_TO_STRING(cadence.at(index))));
                     }
                 }
 
-                const int currentPowerLeft = (index < powerLeft.length()) ?
-                    first(powerLeft.at(index).toMap().value(QLatin1String("current-power"))).toInt() : 0;
-                const int currentPowerRight = (index < powerRight.length()) ?
-                    first(powerRight.at(index).toMap().value(QLatin1String("current-power"))).toInt() : 0;
-                const int currentPower = currentPowerLeft + currentPowerRight;
-                if (currentPower != 0) {
+                const QVariant currentPowerLeft = (index < powerLeft.length()) ?
+                    first(powerLeft.at(index).toMap().value(QLatin1String("current-power"))) : QVariant();
+                const QVariant currentPowerRight = (index < powerRight.length()) ?
+                    first(powerRight.at(index).toMap().value(QLatin1String("current-power"))) : QVariant();
+
+                const QVariant currentPower =
+                    (currentPowerLeft.isValid() && currentPowerRight.isValid())
+                        ? currentPowerLeft.toInt() + currentPowerRight.toInt()
+                        : currentPowerLeft.isValid() ? currentPowerLeft.toInt() * 2
+                        : currentPowerRight.isValid() ? currentPowerRight.toInt() * 2
+                        : QVariant();
+
+                if (currentPower.isValid()) {
                     tpx.appendChild(doc.createElement(QLatin1String("Watts")))
                         .appendChild(doc.createTextNode(QString::fromLatin1("%1")
-                            .arg(currentPower)));
+                            .arg(currentPower.toInt())));
                 }
+
             }
 
             if (trackPoint.hasChildNodes()) {
@@ -2364,7 +2463,8 @@ QByteArray TrainingSession::unzip(const QByteArray &data,
     result.resize(initialBufferSize);
 
     // Prepare a zlib stream structure.
-    z_stream stream = {};
+    z_stream stream;
+    memset(&stream, 0, sizeof(stream));
     stream.next_in = (Bytef *) data.data();
     stream.avail_in = data.length();
     stream.next_out = (Bytef *) result.data();
