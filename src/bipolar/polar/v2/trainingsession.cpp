@@ -1,5 +1,5 @@
 /*
-    Copyright 2014-2015 Paul Colby
+    Copyright 2014-2016 Paul Colby
 
     This file is part of Bipolar.
 
@@ -31,19 +31,31 @@
 #include <QFileInfo>
 #include <QProcessEnvironment>
 
-#ifdef Q_OS_WIN
+#ifdef Q_CC_MSVC
 #include <QtZlib/zlib.h>
 #else
 #include <zlib.h>
 #endif
 
-// As of Qt 5.5 increased the accuracy of QVariant::toString output for
-// doubles and floats (see qtproject/qtbase@8153386).  Here replicate
-// that behaviour for pre-5.5 for a) better accuracy in older Qt versions
-// and b) consistent output (eg in unit tests) across all Qt 5.x versions.
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 5, 0))
+// Qt 5.5 increased the accuracy of QVariant::toString output for floats and
+// doubles (see qtproject/qtbase@8153386), resulting in slightly different
+// output, and QCOMPARE unit test failures.
+// https://github.com/qt/qtbase/commit/8153386397087ce4f5c8997992edf5c1fd38b8db
+//
+// Qt 5.7 added QLocale::FloatingPointShortest (see qt/qtbase@726fed0), and
+// updated QVariant to use that (instead of the Qt 5.5 change above) when
+// converting floats and doubles to string, again resulting in slightly
+// different output, and QCOMPARE unit test failures.
+// https://github.com/qt/qtbase/commit/726fed0d67013cbfac7921d3d4613ca83406fb0f
+//
+// So, QVariant floats and doubles convert (and compare) differently between
+// Qt 5.[0-4], 5.[5,6], and 5.7+.  Here we use the Qt 5.5 / 5.6 implementation
+// because its at least as accurate as 5.7+, and implementing a 5.7-compatible
+// fallback would be a major undertaking (needing to duplicate the third-party
+// double-conversion code Qt borrows from the V8 project).
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 5, 0)) && (QT_VERSION < QT_VERSION_CHECK(5, 7, 0))
     #define VARIANT_TO_STRING(v) v.toString()
-#else // Fallback implementation based closely on Qt 5.5's qvariant.h
+#else // Fallback implementation based closely on Qt 5.5's qvariant.cpp
     #ifndef DBL_MANT_DIG
     #define DBL_MANT_DIG  53
     #endif
@@ -214,7 +226,7 @@ QString TrainingSession::getTcxSport(const quint64 &polarSportValue)
         map.insert(108, TCX_OTHER);  // Water skiing
         map.insert(109, TCX_OTHER);  // Boxing
         map.insert(110, TCX_OTHER);  // Kickboxing
-      //map.insert(111, TCX
+        map.insert(111, TCX_OTHER);  // Mobility (dynamic)
         map.insert(112, TCX_OTHER);  // Telemark skiing
         map.insert(113, TCX_OTHER);  // Backcountry skiing
         map.insert(114, TCX_OTHER);  // Gymnastics
@@ -230,6 +242,7 @@ QString TrainingSession::getTcxSport(const quint64 &polarSportValue)
         map.insert(124, TCX_OTHER);  // Modern
         map.insert(125, TCX_OTHER);  // Ballroom
         map.insert(126, TCX_OTHER);  // Core
+        map.insert(127, TCX_OTHER);  // Mobility (static)
     }
     QMap<quint64, QString>::ConstIterator iter = map.constFind(polarSportValue);
     if (iter == map.constEnd()) {
@@ -1462,8 +1475,8 @@ QDomDocument TrainingSession::toGPX(const QDateTime &creationTime) const
                 }
 
                 QDomElement trkpt = doc.createElement(QLatin1String("trkpt"));
-                trkpt.setAttribute(QLatin1String("lat"), latitude.at(index).toDouble());
-                trkpt.setAttribute(QLatin1String("lon"), longitude.at(index).toDouble());
+                trkpt.setAttribute(QLatin1String("lat"), VARIANT_TO_STRING(latitude.at(index)));
+                trkpt.setAttribute(QLatin1String("lon"), VARIANT_TO_STRING(longitude.at(index)));
                 trkpt.appendChild(doc.createElement(QLatin1String("ele")))
                     .appendChild(doc.createTextNode(VARIANT_TO_STRING(altitude.at(index))));
                 trkpt.appendChild(doc.createElement(QLatin1String("time")))
@@ -2102,7 +2115,7 @@ QDomDocument TrainingSession::toTCX(const QString &buildTime) const
         QVariantMap base = create; // The base data for this lap.
         QVariantMap stats = map.value(STATISTICS).toMap();
         QDomElement track = doc.createElement(QLatin1String("Track"));
-        qint64 durationRemaining = getDuration(firstMap(create.value(QLatin1String("duration"))));
+        quint64 durationRemaining = getDuration(firstMap(create.value(QLatin1String("duration"))));
         double distanceRemaining = first(create.value(QLatin1String("distance"))).toDouble();
         for (int index = 0; index < maxIndex; ++index) {
             #if (QT_VERSION >= QT_VERSION_CHECK(5, 2, 0))
@@ -2110,7 +2123,8 @@ QDomDocument TrainingSession::toTCX(const QString &buildTime) const
             #else
             if ((lap.isNull()) || ((!splits.isEmpty()) && (index * recordInterval > splits.constBegin().key()))) {
             #endif
-                double trailingDuration = 0, trailingDistance = 0;
+                quint64 trailingDuration = 0;
+                double trailingDistance = 0.0;
                 if ((!lap.isNull()) && (!splits.isEmpty())) {
                     #if (QT_VERSION >= QT_VERSION_CHECK(5, 2, 0))
                     splits.remove(splits.firstKey());
@@ -2152,8 +2166,7 @@ QDomDocument TrainingSession::toTCX(const QString &buildTime) const
                 activity.appendChild(lap);
 
                 // Add the per-lap (or per-exercise) statistics.
-                addLapStats(doc, lap, base, stats, trailingDuration / 1000.0,
-                            trailingDistance);
+                addLapStats(doc, lap, base, stats, trailingDuration, trailingDistance);
 
                 track = doc.createElement(QLatin1String("Track"));
                 lap.appendChild(track);
@@ -2375,7 +2388,7 @@ QDomDocument TrainingSession::toTCX(const QString &buildTime) const
                 .appendChild(doc.createTextNode(buildType));
             build.appendChild(doc.createElement(QLatin1String("Time")))
                 .appendChild(doc.createTextNode(
-                    buildTime.isEmpty() ? QString::fromLatin1(__DATE__" "__TIME__) : buildTime));
+                    buildTime.isEmpty() ? QString::fromLatin1(__DATE__ " " __TIME__) : buildTime));
             #ifdef BUILD_USER
             #define BIPOLAR_STRINGIFY(string) #string
             #define BIPOLAR_EXPAND_AND_STRINGIFY(macro) BIPOLAR_STRINGIFY(macro)
@@ -2399,12 +2412,22 @@ QDomDocument TrainingSession::toTCX(const QString &buildTime) const
 void TrainingSession::addLapStats(QDomDocument &doc, QDomElement &lap,
                                   const QVariantMap &base,
                                   const QVariantMap &stats,
-                                  const double duration,
+                                  const quint64 duration,
                                   const double distance) const
 {
+    // Note, we're using an explicit precision argument to QString::arg here
+    // because QString::arg defaults to the precision to -1, which in turn
+    // (within QLocale::doubleToString) defaults to a maximum of 6 significant
+    // digits (not decimal digits, as the QString::arg docs claim), which is not
+    // always enough for the TotalTimeSeconds value to be accurate to the
+    // millisecond data that the V800 provides.  We use 20 digits here, since
+    // that's the maximum that could ever be present in a quint64 integer,
+    // however that's likely to be massive overkill for our use case (but does
+    // no harm, since only the necessary digits are printed anyway).
     lap.appendChild(doc.createElement(QLatin1String("TotalTimeSeconds")))
-        .appendChild(doc.createTextNode(QString::fromLatin1("%1").arg(qMax(
-            duration, getDuration(firstMap(base.value(QLatin1String("duration"))))/1000.0))));
+        .appendChild(doc.createTextNode(QString::fromLatin1("%1").arg(
+            qMax(duration, getDuration(firstMap(base.value(QLatin1String("duration")))))/1000.0,
+            0, 'g', 20))); // Since quint64 can have supply more than 20 digits.
     lap.appendChild(doc.createElement(QLatin1String("DistanceMeters")))
         .appendChild(doc.createTextNode(QString::fromLatin1("%1").arg(qMax(
             distance, first(base.value(QLatin1String("distance"))).toDouble()))));
