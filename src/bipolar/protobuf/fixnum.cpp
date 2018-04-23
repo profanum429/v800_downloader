@@ -1,5 +1,5 @@
 /*
-    Copyright 2014-2015 Paul Colby
+    Copyright 2014-2016 Paul Colby
 
     This file is part of Bipolar.
 
@@ -23,21 +23,36 @@
 #include <QDebug>
 #include <QtEndian>
 
-// Template specialisation for double (not included in Qt).
-template<> double qFromLittleEndian<double>(const uchar * src)
+// See also  google/protobuf::src/google/protobuf/stubs/casts.h::bit_cast
+template<typename Src, typename Dst> inline Dst copyAligned(const Src src)
 {
-    Q_ASSERT(sizeof(double) == sizeof(quint64));
-    const quint64 value = qFromLittleEndian<quint64>(src);
-    return *reinterpret_cast<const double *>(&value);
+    Q_STATIC_ASSERT(sizeof(Src) == sizeof(Dst)); // Guarantees alignment.
+    Dst dst;
+    memcpy(&dst, &src, sizeof(dst));
+    return dst;
+}
+
+// In Qt 5.7, these the endian-swapping functions were changed to use void
+// instead of uchar. See Qt commit 5c2ff22ba117f295718c529198ab42ee4646d90c.
+#if (QT_VERSION < QT_VERSION_CHECK(5, 7, 0))
+#define ENDIAN_SWAPPING_PARAM_TYPE const uchar *
+#else
+#define ENDIAN_SWAPPING_PARAM_TYPE const void *
+#endif
+
+// Template specialisation for double (not included in Qt).
+template<> double qFromLittleEndian<double>(ENDIAN_SWAPPING_PARAM_TYPE src)
+{
+    return copyAligned<quint64, double>(qFromLittleEndian<quint64>(src));
 }
 
 // Template specialisation for float (not included in Qt).
-template<> float qFromLittleEndian<float>(const uchar * src)
+template<> float qFromLittleEndian<float>(ENDIAN_SWAPPING_PARAM_TYPE src)
 {
-    Q_ASSERT(sizeof(float) == sizeof(quint32));
-    const quint32 value = qFromLittleEndian<quint32>(src);
-    return *reinterpret_cast<const float *>(&value);
+    return copyAligned<quint32, float>(qFromLittleEndian<quint32>(src));
 }
+
+#undef ENDIAN_SWAPPING_PARAM_TYPE
 
 namespace ProtoBuf {
 
