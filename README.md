@@ -1,6 +1,8 @@
 v800_downloader
 ===============
 
+Update: I haven't followed this in roughly 4 years; I kinda forgot it existed, sorry guys! I haven't owned a V800 for probably 3 years now so I can't do any testing or changes for stuff. Probably already have but consider this pretty much abandoned / no more work on it (not changing much from what it's been at though, lol). Feel free to fork and modify to heart's content.
+
 Update: Release 5 fixes a bug where some garbage data would result in thinking files and directories existed where they did not and had obviously faulty names. This has been fixed. I only saw this after I did a factory reset, so it might not occur in normal usage but it shouldn't be an issue now.
 
 Update: Release 4 now properly supports multisport sessions. Exported files will have a _(NUMBER) appended to them before the extension. This number is the order of the sport in the multisport session. Single sport sessions now have a _0 appended before the extension to represent that this is sport 1 of the session.
