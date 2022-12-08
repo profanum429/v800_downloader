@@ -23,7 +23,7 @@ backend is the USB backend that handles all communication to the V800 itself and
 backend is from <a href="https://www.github.com/pcolby/bipolar">Bipolar</a> and is responsible for doing the actual hardwork; the converting
 the session data into good formats like TCX, GPX and HRM.
 
-Steps to use:<br>
+### Steps to use:
 1) Connect your V800 to the computer with the USB cable<br>
 2) Run V800 Downloader; it should display a message saying that it is retrieving session data<br>
 3) Select which sessions you desire to download from the list. You can grab as many or little as you like. <br>
@@ -32,12 +32,27 @@ Steps to use:<br>
    Additionally any error messages will appear here also.<br>
 6) Upload your files :)<br>
 
-Credits:
+### Building
+To build on Linux, first install Qt 5 according to your disto, then:
+```sh
+cd path/to/v800_downloader
+qmake
+make
+```
+
+On Windows, install Qt 5, then:
+```sh
+cd path\to\v800_downloader
+qmake
+nmake
+```
+
+### Credits
 I couldn't of done this program without the <a href="https://www.github.com/pcolby/bipolar">Bipolar</a> project as it does the hard work of
 converting the data into actual files. All of my modifications are available at https://www.github.com/profanum429/v800_downloader, under the
 src/bipolar directory.<br>
 LibUSB from libusb.info. Version 1.0.19 is incorporated into V800 Downloader. I've made no source modifications. <br>
 rawhid from https://www.pjrc.com/teensy/rawhid.html. I use the V1.0 of the OS X version for USB communication in OS X.<br>
 
-License:
+### License
 All V800 Downloader files are licensed GPL3. The Bipolar files under src/bipolar are licensed GPL3 per the original source.
